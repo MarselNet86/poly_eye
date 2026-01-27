@@ -1,0 +1,29 @@
+<h3>Analysis Complete!</h3>
+
+<h4>Summary Metrics:</h4>
+<pre>
+Market Resolved: {{ resolved_side }}
+Total Trades: {{ metrics.trade_count }}
+
+Position at Resolution:
+  Remaining YES shares: {{ metrics.remaining_yes|floatformat:2 }}
+  Remaining NO shares:  {{ metrics.remaining_no|floatformat:2 }}
+  Final value: ${{ metrics.final_value|floatformat:2 }}
+  Total spent: ${{ metrics.total_spent|floatformat:2 }}
+  
+<strong>FINAL PNL: ${{ metrics.pnl|floatformat:2 }}</strong>
+
+Buy/Sell Totals:
+  YES buys:  {{ metrics.yes_buy_sh|floatformat:2 }} sh / ${{ metrics.yes_buy_cost|floatformat:2 }}
+  YES sells: {{ metrics.yes_sell_sh|floatformat:2 }} sh / ${{ metrics.yes_sell_cost|floatformat:2 }}
+  NO buys:   {{ metrics.no_buy_sh|floatformat:2 }} sh / ${{ metrics.no_buy_cost|floatformat:2 }}
+  NO sells:  {{ metrics.no_sell_sh|floatformat:2 }} sh / ${{ metrics.no_sell_cost|floatformat:2 }}
+</pre>
+
+<h4>Chart:</h4>
+<img src="{% url 'analyzer:view_chart' %}" alt="Trade Analysis Chart" style="max-width: 100%;">
+
+<h4>Download Report:</h4>
+<a href="{% url 'analyzer:download_report' %}" download>
+    <button>Download Text Report</button>
+</a>

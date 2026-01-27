@@ -1,0 +1,7 @@
+<p style="color: green;">
+    ✓ Resolved side set to: <strong>{{ resolved_side }}</strong>
+    {% if auto_inferred %}
+    <br>
+    (Auto-inferred from latest trade: outcome={{ outcome }}, price={{ price }})
+    {% endif %}
+</p>

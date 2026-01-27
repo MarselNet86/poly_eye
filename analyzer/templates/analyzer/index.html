@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polymarket Trade Analyzer</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body>
+    <h1>Polymarket Trade Analyzer</h1>
+
+    <!-- STEP 1: Market Search -->
+    <div x-data="{ showSearch: true }">
+        <h2>Step 1: Search Market</h2>
+        <form hx-get="{% url 'analyzer:search_market' %}" hx-target="#search-results" hx-trigger="submit"
+            hx-indicator="#search-loading">
+            <label>Market Name:</label>
+            <input type="text" name="q" required>
+            <button type="submit">Search</button>
+            <span id="search-loading" class="htmx-indicator">Loading...</span>
+        </form>
+
+        <div id="search-results"></div>
+    </div>
+
+    <hr>
+
+    <!-- STEP 2: Load Trades -->
+    <div x-data="{ method: 'api' }">
+        <h2>Step 2: Load Trades</h2>
+
+        <label>
+            <input type="radio" x-model="method" value="api">
+            Fetch from API
+        </label>
+        <label>
+            <input type="radio" x-model="method" value="file">
+            Upload JSON File
+        </label>
+
+        <!-- API Method -->
+        <div x-show="method === 'api'">
+            <form hx-post="{% url 'analyzer:fetch_trades' %}" hx-target="#trades-result" hx-indicator="#fetch-loading">
+                {% csrf_token %}
+                <label>Condition ID:</label>
+                <input type="text" name="condition_id" id="condition-id-input" required>
+                <br>
+                <label>User Address:</label>
+                <input type="text" name="user_address" required>
+                <br>
+                <button type="submit">Fetch Trades</button>
+                <span id="fetch-loading" class="htmx-indicator">Loading...</span>
+            </form>
+        </div>
+
+        <!-- File Upload Method -->
+        <div x-show="method === 'file'">
+            <form hx-post="{% url 'analyzer:upload_trades' %}" hx-encoding="multipart/form-data"
+                hx-target="#trades-result" hx-indicator="#upload-loading">
+                {% csrf_token %}
+                <label>JSON File:</label>
+                <input type="file" name="file" accept=".json" required>
+                <br>
+                <button type="submit">Upload</button>
+                <span id="upload-loading" class="htmx-indicator">Loading...</span>
+            </form>
+        </div>
+
+        <div id="trades-result"></div>
+    </div>
+
+    <hr>
+
+    <!-- STEP 3: Set Resolved Side -->
+    <div id="resolved-section" style="display:none;">
+        <h2>Step 3: Set Resolved Side</h2>
+        <form hx-post="{% url 'analyzer:set_resolved_side' %}" hx-target="#resolved-result">
+            {% csrf_token %}
+            <label>
+                <input type="radio" name="resolved_side" value="YES" required>
+                YES
+            </label>
+            <label>
+                <input type="radio" name="resolved_side" value="NO" required>
+                NO
+            </label>
+            <label>
+                <input type="radio" name="resolved_side" value="AUTO" required>
+                AUTO (infer from last trade)
+            </label>
+            <br>
+            <button type="submit">Set Resolved Side</button>
+        </form>
+
+        <div id="resolved-result"></div>
+    </div>
+
+    <hr>
+
+    <!-- STEP 4: Generate Analysis -->
+    <div id="analysis-section" style="display:none;">
+        <h2>Step 4: Generate Analysis</h2>
+        <button hx-get="{% url 'analyzer:generate_analysis' %}" hx-target="#analysis-result"
+            hx-indicator="#analysis-loading">
+            Generate Report & Chart
+        </button>
+        <span id="analysis-loading" class="htmx-indicator">Generating...</span>
+
+        <div id="analysis-result"></div>
+    </div>
+
+    <style>
+        .htmx-indicator {
+            display: none;
+        }
+
+        .htmx-request .htmx-indicator {
+            display: inline;
+        }
+
+        body {
+            font-family: monospace;
+            margin: 20px;
+        }
+
+        hr {
+            margin: 30px 0;
+        }
+
+        input[type="text"] {
+            width: 400px;
+            padding: 5px;
+        }
+
+        button {
+            padding: 5px 15px;
+            cursor: pointer;
+        }
+
+        label {
+            display: inline-block;
+            margin: 5px 0;
+        }
+    </style>
+
+    <script>
+        // Auto-fill condition ID when market is selected
+        document.body.addEventListener('htmx:afterSwap', function (evt) {
+            if (evt.detail.target.id === 'search-results') {
+                const radios = document.querySelectorAll('input[name="selected_market"]');
+                radios.forEach(radio => {
+                    radio.addEventListener('change', function () {
+                        document.getElementById('condition-id-input').value = this.value;
+                    });
+                });
+            }
+
+            // Show resolved section after trades are loaded
+            if (evt.detail.target.id === 'trades-result') {
+                document.getElementById('resolved-section').style.display = 'block';
+            }
+
+            // Show analysis section after resolved side is set
+            if (evt.detail.target.id === 'resolved-result') {
+                document.getElementById('analysis-section').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+
+</html>
