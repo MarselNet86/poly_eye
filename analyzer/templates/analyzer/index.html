@@ -4,115 +4,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Polymarket Trade Analyzer</title>
+    <title>PolyEYE Analyzer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Helvetica Neue', 'Arial', 'sans-serif'],
+                        mono: ['Courier New', 'Courier', 'monospace'],
+                    },
+                    colors: {
+                        hublot: {
+                            orange: '#FF5722',
+                            dark: '#1A1A1A',
+                            light: '#F5F5F7',
+                            card: '#FFFFFF',
+                            border: '#E5E5E5'
+                        }
+                    },
+                    borderRadius: {
+                        '4xl': '2.5rem',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- HTMX & Alpine.js -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-</head>
-
-<body>
-    <h1>Polymarket Trade Analyzer</h1>
-
-    <!-- STEP 1: Market Search -->
-    <div x-data="{ showSearch: true }">
-        <h2>Step 1: Search Market</h2>
-        <form hx-get="{% url 'analyzer:search_market' %}" hx-target="#search-results" hx-trigger="submit"
-            hx-indicator="#search-loading">
-            <label>Market Name:</label>
-            <input type="text" name="q" required>
-            <button type="submit">Search</button>
-            <span id="search-loading" class="htmx-indicator">Loading...</span>
-        </form>
-
-        <div id="search-results"></div>
-    </div>
-
-    <hr>
-
-    <!-- STEP 2: Load Trades -->
-    <div x-data="{ method: 'api' }">
-        <h2>Step 2: Load Trades</h2>
-
-        <label>
-            <input type="radio" x-model="method" value="api">
-            Fetch from API
-        </label>
-        <label>
-            <input type="radio" x-model="method" value="file">
-            Upload JSON File
-        </label>
-
-        <!-- API Method -->
-        <div x-show="method === 'api'">
-            <form hx-post="{% url 'analyzer:fetch_trades' %}" hx-target="#trades-result" hx-indicator="#fetch-loading">
-                {% csrf_token %}
-                <label>Condition ID:</label>
-                <input type="text" name="condition_id" id="condition-id-input" required>
-                <br>
-                <label>User Address:</label>
-                <input type="text" name="user_address" required>
-                <br>
-                <button type="submit">Fetch Trades</button>
-                <span id="fetch-loading" class="htmx-indicator">Loading...</span>
-            </form>
-        </div>
-
-        <!-- File Upload Method -->
-        <div x-show="method === 'file'">
-            <form hx-post="{% url 'analyzer:upload_trades' %}" hx-encoding="multipart/form-data"
-                hx-target="#trades-result" hx-indicator="#upload-loading">
-                {% csrf_token %}
-                <label>JSON File:</label>
-                <input type="file" name="file" accept=".json" required>
-                <br>
-                <button type="submit">Upload</button>
-                <span id="upload-loading" class="htmx-indicator">Loading...</span>
-            </form>
-        </div>
-
-        <div id="trades-result"></div>
-    </div>
-
-    <hr>
-
-    <!-- STEP 3: Set Resolved Side -->
-    <div id="resolved-section" style="display:none;">
-        <h2>Step 3: Set Resolved Side</h2>
-        <form hx-post="{% url 'analyzer:set_resolved_side' %}" hx-target="#resolved-result">
-            {% csrf_token %}
-            <label>
-                <input type="radio" name="resolved_side" value="YES" required>
-                YES
-            </label>
-            <label>
-                <input type="radio" name="resolved_side" value="NO" required>
-                NO
-            </label>
-            <label>
-                <input type="radio" name="resolved_side" value="AUTO" required>
-                AUTO (infer from last trade)
-            </label>
-            <br>
-            <button type="submit">Set Resolved Side</button>
-        </form>
-
-        <div id="resolved-result"></div>
-    </div>
-
-    <hr>
-
-    <!-- STEP 4: Generate Analysis -->
-    <div id="analysis-section" style="display:none;">
-        <h2>Step 4: Generate Analysis</h2>
-        <button hx-get="{% url 'analyzer:generate_analysis' %}" hx-target="#analysis-result"
-            hx-indicator="#analysis-loading">
-            Generate Report & Chart
-        </button>
-        <span id="analysis-loading" class="htmx-indicator">Generating...</span>
-
-        <div id="analysis-result"></div>
-    </div>
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
+        body {
+            background-color: #F5F5F7;
+            color: #1A1A1A;
+        }
+
         .htmx-indicator {
             display: none;
         }
@@ -120,52 +50,409 @@
         .htmx-request .htmx-indicator {
             display: inline;
         }
-
-        body {
-            font-family: monospace;
-            margin: 20px;
-        }
-
-        hr {
-            margin: 30px 0;
-        }
-
-        input[type="text"] {
-            width: 400px;
-            padding: 5px;
-        }
-
-        button {
-            padding: 5px 15px;
-            cursor: pointer;
-        }
-
-        label {
-            display: inline-block;
-            margin: 5px 0;
-        }
     </style>
+</head>
+
+<body class="min-h-screen pb-20 selection:bg-black selection:text-white" x-data="{
+        currentStep: 1,
+        completedSteps: [1],
+        marketTitle: 'Market',
+        
+        isActive(step) {
+            return this.currentStep === step;
+        },
+        
+        isCompleted(step) {
+            return this.completedSteps.includes(step);
+        },
+        
+        canNav(step) {
+            return this.isCompleted(step) || this.currentStep === step || step < this.currentStep;
+        },
+        
+        setStep(step) {
+            if (this.canNav(step)) {
+                this.currentStep = step;
+            }
+        },
+        
+        completeStep(step) {
+            if (!this.completedSteps.includes(step)) {
+                this.completedSteps.push(step);
+            }
+            // Auto advance
+            const next = step + 1;
+            if (next <= 4) {
+                this.currentStep = next;
+                if (!this.completedSteps.includes(next)) {
+                    this.completedSteps.push(next);
+                }
+            }
+        },
+
+        marketSelected(title) {
+            this.marketTitle = title;
+            this.completeStep(1);
+        },
+
+        tradesLoaded() {
+            this.completeStep(2);
+        },
+
+        resolvedSet() {
+            this.completeStep(3);
+        }
+    }">
+
+    <!-- Header -->
+    <header
+        class="py-6 px-8 md:px-12 bg-[#F5F5F7] sticky top-0 z-50 border-b border-black/10 backdrop-blur-md bg-opacity-90">
+        <div class="flex items-center justify-between">
+            <div class="text-2xl font-thin tracking-[0.2em] uppercase text-black">
+                xDaimon ~ PolyEYE
+            </div>
+            <!-- Horizontal Divider (visual only, handled by border-b above but emphasized here if needed) -->
+        </div>
+    </header>
+
+    <main class="max-w-[1600px] mx-auto px-4 md:px-8 mt-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- Left Sidebar (Navigator) -->
+            <aside class="lg:col-span-3">
+                <div class="bg-white rounded-[40px] p-4 border border-black sticky top-32">
+                    <div class="flex flex-col gap-2">
+                        <!-- Step 1 -->
+                        <button @click="setStep(1)" :disabled="!canNav(1)"
+                            class="relative flex items-center gap-4 p-4 rounded-[32px] transition-all duration-500 group overflow-hidden border border-transparent"
+                            :class="isActive(1) ? 'bg-black text-white' : 'text-gray-400 hover:border-black hover:text-black ' + (!canNav(1) ? 'opacity-50 cursor-not-allowed' : '')">
+                            <div class="h-10 w-10 rounded-full flex items-center justify-center transition-colors duration-300"
+                                :class="isActive(1) ? 'bg-white/10 text-white' : (isCompleted(1) ? 'bg-gray-100 text-black' : 'bg-gray-50 text-gray-400 group-hover:bg-white group-hover:text-black')">
+                                <i data-lucide="search" width="18"></i>
+                            </div>
+                            <div class="text-left">
+                                <span class="block text-[10px] font-light uppercase tracking-wider mb-0.5"
+                                    :class="isActive(1) ? 'text-gray-400' : 'text-gray-400'">Step 01</span>
+                                <span class="block text-sm font-light uppercase tracking-wide"
+                                    :class="isActive(1) ? 'text-white' : 'text-gray-500 group-hover:text-black'">Search</span>
+                            </div>
+                        </button>
+
+                        <!-- Step 2 -->
+                        <button @click="setStep(2)" :disabled="!canNav(2)"
+                            class="relative flex items-center gap-4 p-4 rounded-[32px] transition-all duration-500 group overflow-hidden border border-transparent"
+                            :class="isActive(2) ? 'bg-black text-white' : 'text-gray-400 hover:border-black hover:text-black ' + (!canNav(2) ? 'opacity-50 cursor-not-allowed' : '')">
+                            <div class="h-10 w-10 rounded-full flex items-center justify-center transition-colors duration-300"
+                                :class="isActive(2) ? 'bg-white/10 text-white' : (isCompleted(2) ? 'bg-gray-100 text-black' : 'bg-gray-50 text-gray-400 group-hover:bg-white group-hover:text-black')">
+                                <i data-lucide="list-filter" width="18"></i>
+                            </div>
+                            <div class="text-left">
+                                <span class="block text-[10px] font-light uppercase tracking-wider mb-0.5"
+                                    :class="isActive(2) ? 'text-gray-400' : 'text-gray-400'">Step 02</span>
+                                <span class="block text-sm font-light uppercase tracking-wide"
+                                    :class="isActive(2) ? 'text-white' : 'text-gray-500 group-hover:text-black'">Load
+                                    Data</span>
+                            </div>
+                        </button>
+
+                        <!-- Step 3 -->
+                        <button @click="setStep(3)" :disabled="!canNav(3)"
+                            class="relative flex items-center gap-4 p-4 rounded-[32px] transition-all duration-500 group overflow-hidden border border-transparent"
+                            :class="isActive(3) ? 'bg-black text-white' : 'text-gray-400 hover:border-black hover:text-black ' + (!canNav(3) ? 'opacity-50 cursor-not-allowed' : '')">
+                            <div class="h-10 w-10 rounded-full flex items-center justify-center transition-colors duration-300"
+                                :class="isActive(3) ? 'bg-white/10 text-white' : (isCompleted(3) ? 'bg-gray-100 text-black' : 'bg-gray-50 text-gray-400 group-hover:bg-white group-hover:text-black')">
+                                <i data-lucide="scale" width="18"></i>
+                            </div>
+                            <div class="text-left">
+                                <span class="block text-[10px] font-light uppercase tracking-wider mb-0.5"
+                                    :class="isActive(3) ? 'text-gray-400' : 'text-gray-400'">Step 03</span>
+                                <span class="block text-sm font-light uppercase tracking-wide"
+                                    :class="isActive(3) ? 'text-white' : 'text-gray-500 group-hover:text-black'">Resolve</span>
+                            </div>
+                        </button>
+
+                        <!-- Step 4 -->
+                        <button @click="setStep(4)" :disabled="!canNav(4)"
+                            class="relative flex items-center gap-4 p-4 rounded-[32px] transition-all duration-500 group overflow-hidden border border-transparent"
+                            :class="isActive(4) ? 'bg-black text-white' : 'text-gray-400 hover:border-black hover:text-black ' + (!canNav(4) ? 'opacity-50 cursor-not-allowed' : '')">
+                            <div class="h-10 w-10 rounded-full flex items-center justify-center transition-colors duration-300"
+                                :class="isActive(4) ? 'bg-white/10 text-white' : (isCompleted(4) ? 'bg-gray-100 text-black' : 'bg-gray-50 text-gray-400 group-hover:bg-white group-hover:text-black')">
+                                <i data-lucide="bar-chart-3" width="18"></i>
+                            </div>
+                            <div class="text-left">
+                                <span class="block text-[10px] font-light uppercase tracking-wider mb-0.5"
+                                    :class="isActive(4) ? 'text-gray-400' : 'text-gray-400'">Step 04</span>
+                                <span class="block text-sm font-light uppercase tracking-wide"
+                                    :class="isActive(4) ? 'text-white' : 'text-gray-500 group-hover:text-black'">Analysis</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="mt-8 p-6 bg-[#F5F5F7] rounded-[32px] text-center border border-transparent">
+                        <span class="text-[10px] font-light uppercase tracking-widest text-gray-400">v1.0</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Content Area -->
+            <section class="lg:col-span-9">
+                <div class="bg-white rounded-[48px] p-8 md:p-12 min-h-[600px] border border-black relative">
+
+                    <!-- STEP 1: Search -->
+                    <div x-show="isActive(1)" x-transition.opacity.duration.500ms>
+                        <div class="mb-10">
+                            <h2
+                                class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
+                                Find Market
+                            </h2>
+                            <p class="mt-4 text-lg text-gray-500 font-light max-w-md">
+                                Search for the Polymarket event you wish to analyze.
+                            </p>
+                        </div>
+
+                        <form hx-get="{% url 'analyzer:search_market' %}" hx-target="#search-results"
+                            hx-trigger="submit" hx-indicator="#search-loading" class="flex gap-4 mb-12">
+                            <div class="w-full relative">
+                                <input type="text" name="q" placeholder="e.g. 'Bitcoin 2024' or 'Election'" required
+                                    class="w-full bg-transparent border border-black rounded-full px-6 py-4 text-black font-light placeholder-gray-400 focus:outline-none focus:bg-white transition-all">
+                            </div>
+                            <button type="submit"
+                                class="px-8 py-4 rounded-full font-light uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 bg-black text-white border border-black hover:bg-white hover:text-black whitespace-nowrap">
+                                <span
+                                    class="htmx-indicator w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
+                                    id="search-loading"></span>
+                                <span class="htmx-request:hidden">Search</span>
+                            </button>
+                        </form>
+
+                        <div id="search-results" class="space-y-4"></div>
+                    </div>
+
+                    <!-- STEP 2: Load Trades -->
+                    <div x-show="isActive(2)" x-transition.opacity.duration.500ms style="display: none;">
+                        <div class="mb-10">
+                            <h2
+                                class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
+                                Load Data
+                            </h2>
+                            <p class="mt-4 text-lg text-gray-500 font-light max-w-md">
+                                Import trade history for "<span x-text="marketTitle"></span>"
+                            </p>
+                        </div>
+
+                        <div x-data="{ method: 'api' }" class="w-full max-w-xl">
+                            <div class="flex bg-white rounded-full p-1 w-fit mb-8 border border-black">
+                                <button @click="method = 'api'"
+                                    class="px-6 py-2 rounded-full text-sm font-light uppercase tracking-wider transition-all"
+                                    :class="method === 'api' ? 'bg-black text-white' : 'text-gray-400 hover:text-black'">
+                                    API Fetch
+                                </button>
+                                <button @click="method = 'file'"
+                                    class="px-6 py-2 rounded-full text-sm font-light uppercase tracking-wider transition-all"
+                                    :class="method === 'file' ? 'bg-black text-white' : 'text-gray-400 hover:text-black'">
+                                    Upload JSON
+                                </button>
+                            </div>
+
+                            <div class="bg-white rounded-[32px] p-8 border border-black">
+                                <!-- API Form -->
+                                <form x-show="method === 'api'" hx-post="{% url 'analyzer:fetch_trades' %}"
+                                    hx-target="#trades-result" hx-indicator="#fetch-loading" class="space-y-6">
+                                    {% csrf_token %}
+                                    <div class="w-full">
+                                        <label
+                                            class="block text-xs font-light uppercase tracking-widest text-gray-500 mb-2 ml-4">Condition
+                                            ID</label>
+                                        <input type="text" name="condition_id" id="condition-id-input" required readonly
+                                            class="w-full bg-gray-50 border border-gray-200 rounded-full px-6 py-4 text-gray-500 font-light focus:outline-none">
+                                    </div>
+                                    <div class="w-full">
+                                        <label
+                                            class="block text-xs font-light uppercase tracking-widest text-gray-500 mb-2 ml-4">User
+                                            Address</label>
+                                        <input type="text" name="user_address" placeholder="0x..." required
+                                            class="w-full bg-transparent border border-black rounded-full px-6 py-4 text-black font-light placeholder-gray-400 focus:outline-none focus:bg-white transition-all">
+                                    </div>
+                                    <button type="submit"
+                                        class="w-full px-8 py-4 rounded-full font-light uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 bg-black text-white border border-black hover:bg-white hover:text-black">
+                                        <span
+                                            class="htmx-indicator w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
+                                            id="fetch-loading"></span>
+                                        <span class="htmx-request:hidden">Fetch Trades</span>
+                                    </button>
+                                </form>
+
+                                <!-- File Upload Form -->
+                                <form x-show="method === 'file'" hx-post="{% url 'analyzer:upload_trades' %}"
+                                    hx-encoding="multipart/form-data" hx-target="#trades-result"
+                                    hx-indicator="#upload-loading" class="space-y-6">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="market_title" :value="marketTitle">
+                                    <!-- If needed by backend -->
+
+                                    <div
+                                        class="relative w-full h-48 border border-dashed border-black rounded-3xl flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 transition-colors cursor-pointer group">
+                                        <i data-lucide="upload" class="mb-4 group-hover:text-black"></i>
+                                        <span class="uppercase text-xs font-bold tracking-widest">Select JSON
+                                            File</span>
+                                        <input type="file" name="file" accept=".json" required
+                                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                    </div>
+
+                                    <button type="submit"
+                                        class="w-full px-8 py-4 rounded-full font-light uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 bg-black text-white border border-black hover:bg-white hover:text-black">
+                                        <span
+                                            class="htmx-indicator w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
+                                            id="upload-loading"></span>
+                                        <span class="htmx-request:hidden">Process File</span>
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div id="trades-result" class="mt-4"></div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Resolve -->
+                    <div x-show="isActive(3)" x-transition.opacity.duration.500ms style="display: none;">
+                        <div class="mb-10">
+                            <h2
+                                class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
+                                Resolution
+                            </h2>
+                            <p class="mt-4 text-lg text-gray-500 font-light max-w-md">
+                                How did the market resolve? Set the outcome to calculate PnL.
+                            </p>
+                        </div>
+
+                        <form hx-post="{% url 'analyzer:set_resolved_side' %}" hx-target="#resolved-result">
+                            {% csrf_token %}
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <!-- YES Button -->
+                                <label
+                                    class="cursor-pointer group bg-white p-10 rounded-[40px] border border-black hover:bg-black hover:text-white transition-all text-left flex flex-col justify-between h-64 relative">
+                                    <input type="radio" name="resolved_side" value="YES" class="hidden"
+                                        @click="$el.form.requestSubmit()">
+                                    <div
+                                        class="h-12 w-12 rounded-full border border-current flex items-center justify-center mb-4">
+                                        <i data-lucide="check-circle-2" width="24"></i>
+                                    </div>
+                                    <div>
+                                        <span class="block text-4xl font-thin mb-2">YES</span>
+                                        <span class="opacity-50 text-sm font-light uppercase tracking-wider">Winning
+                                            Outcome</span>
+                                    </div>
+                                </label>
+
+                                <!-- NO Button -->
+                                <label
+                                    class="cursor-pointer group bg-white p-10 rounded-[40px] border border-black hover:bg-black hover:text-white transition-all text-left flex flex-col justify-between h-64 relative">
+                                    <input type="radio" name="resolved_side" value="NO" class="hidden"
+                                        @click="$el.form.requestSubmit()">
+                                    <div
+                                        class="h-12 w-12 rounded-full border border-current flex items-center justify-center mb-4">
+                                        <i data-lucide="alert-circle" width="24"></i>
+                                    </div>
+                                    <div>
+                                        <span class="block text-4xl font-thin mb-2">NO</span>
+                                        <span class="opacity-50 text-sm font-light uppercase tracking-wider">Winning
+                                            Outcome</span>
+                                    </div>
+                                </label>
+
+                                <!-- AUTO Button -->
+                                <label
+                                    class="cursor-pointer group bg-gray-50 p-10 rounded-[40px] border border-black hover:bg-black hover:text-white transition-all text-left flex flex-col justify-between h-64 relative overflow-hidden">
+                                    <input type="radio" name="resolved_side" value="AUTO" class="hidden"
+                                        @click="$el.form.requestSubmit()">
+                                    <div class="absolute top-0 right-0 p-8 opacity-5">
+                                        <i data-lucide="search" width="100"></i>
+                                    </div>
+                                    <div
+                                        class="h-12 w-12 rounded-full border border-current flex items-center justify-center mb-4 z-10">
+                                        <span class="font-mono text-xs">AI</span>
+                                    </div>
+                                    <div class="z-10">
+                                        <span class="block text-4xl font-thin mb-2">AUTO</span>
+                                        <span class="opacity-50 text-sm font-light uppercase tracking-wider">Infer from
+                                            data</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </form>
+                        <div id="resolved-result"></div>
+                    </div>
+
+                    <!-- STEP 4: Analysis -->
+                    <div x-show="isActive(4)" x-transition.opacity.duration.500ms style="display: none;">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+                            <div>
+                                <h2
+                                    class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
+                                    Performance
+                                </h2>
+                            </div>
+                            <!-- Trigger analysis generation when entering Step 4 if not present -->
+                            <button hx-get="{% url 'analyzer:generate_analysis' %}" hx-target="#analysis-result"
+                                hx-indicator="#analysis-loading" id="generate-btn" class="hidden">
+                                Generate
+                            </button>
+                        </div>
+
+                        <div id="analysis-loading" class="htmx-indicator w-full h-64 flex items-center justify-center">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+                        </div>
+
+                        <div id="analysis-result">
+                            <!-- Analysis Partial will load here -->
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+    </main>
 
     <script>
-        // Auto-fill condition ID when market is selected
+        // Initialize Lucide icons
+        lucide.createIcons();
+
         document.body.addEventListener('htmx:afterSwap', function (evt) {
+            // Re-run icons for new content
+            lucide.createIcons();
+
+            // Logic to handle auto-advancing based on which target was updated
             if (evt.detail.target.id === 'search-results') {
+                // Just showing results, don't advance yet.
+                // Bind click events to search results
                 const radios = document.querySelectorAll('input[name="selected_market"]');
                 radios.forEach(radio => {
                     radio.addEventListener('change', function () {
-                        document.getElementById('condition-id-input').value = this.value;
+                        // Update condition ID
+                        let cidInput = document.getElementById('condition-id-input');
+                        if (cidInput) cidInput.value = this.value;
+
+                        // Get title safely
+                        let title = this.dataset.title || "Market";
+
+                        // Call Alpine
+                        document.querySelector('[x-data]').__x.$data.marketSelected(title);
                     });
                 });
             }
 
-            // Show resolved section after trades are loaded
             if (evt.detail.target.id === 'trades-result') {
-                document.getElementById('resolved-section').style.display = 'block';
+                if (evt.detail.target.innerHTML.includes('Success') || evt.detail.target.innerHTML.includes('✓')) {
+                    document.querySelector('[x-data]').__x.$data.tradesLoaded();
+                }
             }
 
-            // Show analysis section after resolved side is set
             if (evt.detail.target.id === 'resolved-result') {
-                document.getElementById('analysis-section').style.display = 'block';
+                document.querySelector('[x-data]').__x.$data.resolvedSet();
+                // Auto trigger generation for Step 4
+                setTimeout(() => {
+                    htmx.trigger('#generate-btn', 'click');
+                }, 100);
             }
         });
     </script>

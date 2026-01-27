@@ -1,18 +1,29 @@
 {% if results %}
-<h3>Search Results:</h3>
-{% for result in results %}
-<div>
-    <label>
-        <input type="radio" name="selected_market" value="{{ result.condition_id }}">
-        <strong>{{ result.market_title }}</strong>
-        <br>
-        Event: {{ result.event_title }}
-        <br>
-        Condition ID: {{ result.condition_id }}
+<h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-6">Search Results:</h3>
+<div class="space-y-4">
+    {% for result in results %}
+    <label class="block cursor-pointer">
+        <input type="radio" name="selected_market" value="{{ result.condition_id }}"
+            data-title="{{ result.market_title }}" class="hidden peer">
+        <div
+            class="group bg-white rounded-3xl p-6 border border-black transition-all duration-300 hover:bg-black hover:text-white peer-checked:bg-black peer-checked:text-white flex justify-between items-center">
+            <div>
+                <h4 class="font-light text-xl mb-1">{{ result.market_title }}</h4>
+                <div
+                    class="flex gap-4 text-xs font-mono font-light text-gray-400 group-hover:text-gray-300 peer-checked:text-gray-300">
+                    <span>ID: {{ result.condition_id|truncatechars:10 }}...</span>
+                    <span>•</span>
+                    <span>{{ result.event_title }}</span>
+                </div>
+            </div>
+            <div
+                class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-white group-hover:text-black peer-checked:bg-white peer-checked:text-black transition-all">
+                <i data-lucide="arrow-right" width="18"></i>
+            </div>
+        </div>
     </label>
+    {% endfor %}
 </div>
-<br>
-{% endfor %}
 {% else %}
-<p>No markets found.</p>
+<p class="text-center text-gray-400 py-10 font-mono text-sm font-light">No markets found.</p>
 {% endif %}

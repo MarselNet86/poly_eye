@@ -11,3 +11,8 @@
     4.1 Пусть текст везде будет тонким. Обводка у блоков должна быть черная и тонкая. В header оставьте только текст POLYeye, справа у header уберите статус и выпадающий список, добавьте у header тонкий горизонтальный разделитель соотвествием с дизайном 
 
 5. (antigravity) Тебе необходимо проанализировать код с папки @polyeye-trade-analyzer и перевести его в один единый файл index.html с сохранением всей логики и дизайна 
+    5.1 Окей, но после того как я выбираю маркет на этапе SEARCH, у меня возникает ошибка и я не могу приступить к следующему этапу
+
+    analyzer/:439 Uncaught TypeError: Cannot read properties of undefined (reading '$data')
+        at HTMLInputElement.<anonymous> (analyzer/:439:63)
+    (anonymous)	@	analyzer/:439
