@@ -179,24 +179,67 @@
             <p class="text-gray-400 text-sm font-light mt-1 uppercase tracking-wider">Execution Points & Price Action
             </p>
         </div>
+    </div>
 
-        <!-- Filters -->
-        <div class="flex bg-gray-100 p-1 rounded-2xl border border-black/5">
-            <button onclick="toggleChartSeries('ALL')" id="btn-all"
-                class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all bg-black text-white">All</button>
-            <button onclick="toggleChartSeries('UP')" id="btn-up"
-                class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-black">UP
-                only</button>
-            <button onclick="toggleChartSeries('DOWN')" id="btn-down"
-                class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-black">DOWN
-                only</button>
+    <div id="chart-container"
+        class="bg-white rounded-[40px] border border-black overflow-hidden relative transition-all duration-500 ease-in-out group/container">
+        <!-- Chart Controls -->
+        <div class="absolute top-6 right-6 z-[100] flex items-center gap-4">
+            <!-- Fullscreen Toggle -->
+            <button onclick="toggleFullscreen()" id="fullscreen-btn"
+                class="p-2 rounded-xl border border-black/5 bg-gray-100 text-gray-500 hover:text-black hover:bg-white transition-all"
+                title="Toggle Fullscreen">
+                <i data-lucide="maximize-2" class="w-5 h-5" id="maximize-icon"></i>
+                <i data-lucide="minimize-2" class="w-5 h-5 hidden" id="minimize-icon"></i>
+            </button>
+
+            <!-- Filters -->
+            <div class="flex bg-gray-100 p-1 rounded-2xl border border-black/5">
+                <button onclick="toggleChartSeries('ALL')" id="btn-all"
+                    class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all bg-black text-white">All</button>
+                <button onclick="toggleChartSeries('UP')" id="btn-up"
+                    class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-black">UP
+                    only</button>
+                <button onclick="toggleChartSeries('DOWN')" id="btn-down"
+                    class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-black">DOWN
+                    only</button>
+            </div>
+        </div>
+
+        <div id="chart-wrapper" class="p-6 md:p-10 pt-20 md:pt-24 h-full flex flex-col">
+            <div id="interactive-chart" class="flex-1" style="min-height: 450px;"></div>
         </div>
     </div>
-
-    <div class="bg-white rounded-[40px] p-6 md:p-10 border border-black overflow-hidden relative">
-        <div id="interactive-chart" style="min-height: 450px;"></div>
-    </div>
 </div>
+
+<style>
+    #chart-container.fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 9999;
+        margin: 0;
+        border-radius: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #chart-container.fullscreen #chart-wrapper {
+        padding: 2rem;
+        padding-top: 6rem;
+        /* Extra space for fixed controls */
+        flex: 1;
+    }
+
+    #chart-container.fullscreen #interactive-chart {
+        flex: 1;
+        width: 100% !important;
+        height: 100% !important;
+    }
+</style>
 
 <script>
     // Data setup
@@ -348,6 +391,33 @@
             chart.hideSeries('UP Trades');
             chart.showSeries('DOWN Trades');
         }
+    };
+
+    window.toggleFullscreen = function () {
+        const container = document.getElementById('chart-container');
+        const maxIcon = document.getElementById('maximize-icon');
+        const minIcon = document.getElementById('minimize-icon');
+        const isFullscreen = container.classList.toggle('fullscreen');
+
+        // Update icons
+        if (maxIcon && minIcon) {
+            maxIcon.classList.toggle('hidden', isFullscreen);
+            minIcon.classList.toggle('hidden', !isFullscreen);
+        }
+
+        // Lock/Unlock body scroll
+        document.body.style.overflow = isFullscreen ? 'hidden' : '';
+
+        // Let chart resize to new dimensions
+        setTimeout(() => {
+            if (chart) {
+                chart.updateOptions({
+                    chart: {
+                        height: isFullscreen ? '100%' : 500
+                    }
+                }, false, true);
+            }
+        }, 100);
     };
 
     if (window.lucide) window.lucide.createIcons();
