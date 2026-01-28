@@ -324,12 +324,14 @@
             shared: false,
             intersect: true,
             theme: 'light',
+            followCursor: true,
+            offsetY: 0,
             custom: function ({ series, seriesIndex, dataPointIndex, w }) {
                 const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
                 if (!data) return '';
 
                 if (!data.meta) {
-                    return '<div class="p-4 bg-white border border-black rounded-2xl shadow-xl">' +
+                    return '<div class="p-4 bg-white border border-black rounded-2xl shadow-xl pointer-events-none">' +
                         '<span class="text-[10px] text-gray-400 uppercase block mb-1">Price</span>' +
                         '<span class="text-xl font-thin tracking-tight">' + data.y.toFixed(2) + '¢</span>' +
                         '</div>';
@@ -343,7 +345,7 @@
                     hour: '2-digit', minute: '2-digit', second: '2-digit'
                 });
 
-                return `<div class="p-5 bg-white border border-black rounded-3xl shadow-2xl min-w-[220px]">
+                return `<div class="p-5 bg-white border border-black rounded-3xl shadow-2xl min-w-[220px] pointer-events-none">
                         <div class="flex justify-between items-start mb-4 gap-4">
                             <span class="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${meta.side === 'UP' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}">${meta.side} ${meta.type}</span>
                             <span class="text-[10px] text-gray-400 font-mono text-right leading-tight">${yektTime}</span>
