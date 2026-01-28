@@ -65,9 +65,6 @@
             window.addEventListener('trades-loaded', () => {
                 this.tradesLoaded();
             });
-            window.addEventListener('resolved-set', () => {
-                this.resolvedSet();
-            });
         },
         
         isActive(step) {
@@ -94,7 +91,7 @@
             }
             // Auto advance
             const next = step + 1;
-            if (next <= 4) {
+            if (next <= 3) {
                 this.currentStep = next;
                 if (!this.completedSteps.includes(next)) {
                     this.completedSteps.push(next);
@@ -121,7 +118,7 @@
         class="py-6 px-8 md:px-12 bg-[#F5F5F7] sticky top-0 z-50 border-b border-black/10 backdrop-blur-md bg-opacity-90">
         <div class="flex items-center justify-between">
             <div class="text-2xl font-thin tracking-[0.2em] uppercase text-black">
-                xDaimon ~ PolyEYE
+                PolyEYE
             </div>
             <!-- Horizontal Divider (visual only, handled by border-b above but emphasized here if needed) -->
         </div>
@@ -132,7 +129,7 @@
 
             <!-- Left Sidebar (Navigator) -->
             <aside class="lg:col-span-3">
-                <div class="bg-white rounded-[40px] p-4 border border-black sticky top-32">
+                <div class="bg-white rounded-[40px] p-4 border border-black sticky top-24">
                     <div class="flex flex-col gap-2">
                         <!-- Step 1 -->
                         <button @click="setStep(1)" :disabled="!canNav(1)"
@@ -173,29 +170,13 @@
                             :class="isActive(3) ? 'bg-black text-white' : 'text-gray-400 hover:border-black hover:text-black ' + (!canNav(3) ? 'opacity-50 cursor-not-allowed' : '')">
                             <div class="h-10 w-10 rounded-full flex items-center justify-center transition-colors duration-300"
                                 :class="isActive(3) ? 'bg-white/10 text-white' : (isCompleted(3) ? 'bg-gray-100 text-black' : 'bg-gray-50 text-gray-400 group-hover:bg-white group-hover:text-black')">
-                                <i data-lucide="scale" width="18"></i>
+                                <i data-lucide="bar-chart-3" width="18"></i>
                             </div>
                             <div class="text-left">
                                 <span class="block text-[10px] font-light uppercase tracking-wider mb-0.5"
                                     :class="isActive(3) ? 'text-gray-400' : 'text-gray-400'">Step 03</span>
                                 <span class="block text-sm font-light uppercase tracking-wide"
-                                    :class="isActive(3) ? 'text-white' : 'text-gray-500 group-hover:text-black'">Resolve</span>
-                            </div>
-                        </button>
-
-                        <!-- Step 4 -->
-                        <button @click="setStep(4)" :disabled="!canNav(4)"
-                            class="relative flex items-center gap-4 p-4 rounded-[32px] transition-all duration-500 group overflow-hidden border border-transparent"
-                            :class="isActive(4) ? 'bg-black text-white' : 'text-gray-400 hover:border-black hover:text-black ' + (!canNav(4) ? 'opacity-50 cursor-not-allowed' : '')">
-                            <div class="h-10 w-10 rounded-full flex items-center justify-center transition-colors duration-300"
-                                :class="isActive(4) ? 'bg-white/10 text-white' : (isCompleted(4) ? 'bg-gray-100 text-black' : 'bg-gray-50 text-gray-400 group-hover:bg-white group-hover:text-black')">
-                                <i data-lucide="bar-chart-3" width="18"></i>
-                            </div>
-                            <div class="text-left">
-                                <span class="block text-[10px] font-light uppercase tracking-wider mb-0.5"
-                                    :class="isActive(4) ? 'text-gray-400' : 'text-gray-400'">Step 04</span>
-                                <span class="block text-sm font-light uppercase tracking-wide"
-                                    :class="isActive(4) ? 'text-white' : 'text-gray-500 group-hover:text-black'">Analysis</span>
+                                    :class="isActive(3) ? 'text-white' : 'text-gray-500 group-hover:text-black'">Analysis</span>
                             </div>
                         </button>
                     </div>
@@ -325,78 +306,8 @@
                         </div>
                     </div>
 
-                    <!-- STEP 3: Resolve -->
+                    <!-- STEP 3: Analysis (formerly Step 4) -->
                     <div x-show="isActive(3)" x-transition.opacity.duration.500ms style="display: none;">
-                        <div class="mb-10">
-                            <h2
-                                class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
-                                Resolution
-                            </h2>
-                            <p class="mt-4 text-lg text-gray-500 font-light max-w-md">
-                                How did the market resolve? Set the outcome to calculate PnL.
-                            </p>
-                        </div>
-
-                        <form hx-post="{% url 'analyzer:set_resolved_side' %}" hx-target="#resolved-result">
-                            {% csrf_token %}
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <!-- YES Button -->
-                                <label
-                                    class="cursor-pointer group bg-white p-10 rounded-[40px] border border-black hover:bg-black hover:text-white transition-all text-left flex flex-col justify-between h-64 relative">
-                                    <input type="radio" name="resolved_side" value="YES" class="hidden"
-                                        @click="$el.form.requestSubmit()">
-                                    <div
-                                        class="h-12 w-12 rounded-full border border-current flex items-center justify-center mb-4">
-                                        <i data-lucide="check-circle-2" width="24"></i>
-                                    </div>
-                                    <div>
-                                        <span class="block text-4xl font-thin mb-2">YES</span>
-                                        <span class="opacity-50 text-sm font-light uppercase tracking-wider">Winning
-                                            Outcome</span>
-                                    </div>
-                                </label>
-
-                                <!-- NO Button -->
-                                <label
-                                    class="cursor-pointer group bg-white p-10 rounded-[40px] border border-black hover:bg-black hover:text-white transition-all text-left flex flex-col justify-between h-64 relative">
-                                    <input type="radio" name="resolved_side" value="NO" class="hidden"
-                                        @click="$el.form.requestSubmit()">
-                                    <div
-                                        class="h-12 w-12 rounded-full border border-current flex items-center justify-center mb-4">
-                                        <i data-lucide="alert-circle" width="24"></i>
-                                    </div>
-                                    <div>
-                                        <span class="block text-4xl font-thin mb-2">NO</span>
-                                        <span class="opacity-50 text-sm font-light uppercase tracking-wider">Winning
-                                            Outcome</span>
-                                    </div>
-                                </label>
-
-                                <!-- AUTO Button -->
-                                <label
-                                    class="cursor-pointer group bg-gray-50 p-10 rounded-[40px] border border-black hover:bg-black hover:text-white transition-all text-left flex flex-col justify-between h-64 relative overflow-hidden">
-                                    <input type="radio" name="resolved_side" value="AUTO" class="hidden"
-                                        @click="$el.form.requestSubmit()">
-                                    <div class="absolute top-0 right-0 p-8 opacity-5">
-                                        <i data-lucide="search" width="100"></i>
-                                    </div>
-                                    <div
-                                        class="h-12 w-12 rounded-full border border-current flex items-center justify-center mb-4 z-10">
-                                        <span class="font-mono text-xs">AI</span>
-                                    </div>
-                                    <div class="z-10">
-                                        <span class="block text-4xl font-thin mb-2">AUTO</span>
-                                        <span class="opacity-50 text-sm font-light uppercase tracking-wider">Infer from
-                                            data</span>
-                                    </div>
-                                </label>
-                            </div>
-                        </form>
-                        <div id="resolved-result"></div>
-                    </div>
-
-                    <!-- STEP 4: Analysis -->
-                    <div x-show="isActive(4)" x-transition.opacity.duration.500ms style="display: none;">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
                             <div>
                                 <h2
@@ -404,18 +315,18 @@
                                     Performance
                                 </h2>
                             </div>
-                            <!-- Trigger analysis generation when entering Step 4 if not present -->
+                            <!-- Trigger analysis generation when entering Step 3 -->
                             <button hx-get="{% url 'analyzer:generate_analysis' %}" hx-target="#analysis-result"
                                 hx-indicator="#analysis-loading" id="generate-btn" class="hidden">
                                 Generate
                             </button>
                         </div>
 
-                        <div id="analysis-loading" class="htmx-indicator w-full h-64 flex items-center justify-center">
-                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
-                        </div>
-
                         <div id="analysis-result">
+                            <div id="analysis-loading"
+                                class="htmx-indicator w-full py-20 flex items-center justify-center">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+                            </div>
                             <!-- Analysis Partial will load here -->
                         </div>
                     </div>
@@ -455,15 +366,11 @@
             if (evt.detail.target.id === 'trades-result') {
                 if (evt.detail.target.innerHTML.includes('Success') || evt.detail.target.innerHTML.includes('✓')) {
                     window.dispatchEvent(new CustomEvent('trades-loaded'));
+                    // Auto trigger generation for Step 3 (Analysis)
+                    setTimeout(() => {
+                        htmx.trigger('#generate-btn', 'click');
+                    }, 100);
                 }
-            }
-
-            if (evt.detail.target.id === 'resolved-result') {
-                window.dispatchEvent(new CustomEvent('resolved-set'));
-                // Auto trigger generation for Step 4
-                setTimeout(() => {
-                    htmx.trigger('#generate-btn', 'click');
-                }, 100);
             }
         });
     </script>

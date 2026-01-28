@@ -1,35 +1,66 @@
-<!-- Main KPI Card -->
-<div class="bg-white rounded-[40px] p-8 md:p-12 text-black mb-8 relative overflow-hidden border border-black">
-    <div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12">
-        <div>
-            <span class="text-gray-500 uppercase tracking-widest text-xs font-light mb-2 block">Total Profit /
-                Loss</span>
-            <div
-                class="text-6xl md:text-8xl font-thin tracking-tighter {% if metrics.pnl >= 0 %}text-black{% else %}text-red-500{% endif %}">
-                ${{ metrics.pnl|floatformat:2 }}
+<!-- Dual KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+    <!-- YES Scenario -->
+    <div class="bg-white rounded-[40px] p-8 md:p-10 text-black relative overflow-hidden border border-black group">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <span class="text-green-600 uppercase tracking-widest text-[10px] font-bold mb-1 block">Scenario
+                    A</span>
+                <h3 class="text-3xl font-thin tracking-tight">Outcome: YES</h3>
             </div>
-            <div class="mt-6 flex gap-8">
-                <div>
-                    <div class="text-gray-500 text-xs uppercase tracking-wider mb-1 font-light">Total Spent</div>
-                    <div class="text-xl font-light font-mono">${{ metrics.total_spent|floatformat:2 }}</div>
-                </div>
-                <div>
-                    <div class="text-gray-500 text-xs uppercase tracking-wider mb-1 font-light">Final Value</div>
-                    <div class="text-xl font-light font-mono">${{ metrics.final_value|floatformat:2 }}</div>
-                </div>
+            <div class="h-10 w-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+                <i data-lucide="check-circle-2" width="20"></i>
             </div>
         </div>
 
-        <div class="flex flex-col justify-end">
-            <div class="space-y-4 font-mono text-sm border-t border-black pt-6">
-                <div class="flex justify-between">
-                    <span class="text-gray-500 font-light">Trade Count</span>
-                    <span class="font-bold">{{ metrics.trade_count }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500 font-light">Resolved Side</span>
-                    <span class="font-bold">{{ resolved_side }}</span>
-                </div>
+        <div class="mb-6">
+            <span class="text-gray-400 uppercase tracking-widest text-[10px] font-light mb-1 block">Estimated PnL</span>
+            <div
+                class="text-5xl md:text-6xl font-thin tracking-tighter {% if metrics.pnl_yes >= 0 %}text-black{% else %}text-red-500{% endif %}">
+                ${{ metrics.pnl_yes|floatformat:2 }}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 border-t border-black/5 pt-6">
+            <div>
+                <div class="text-gray-400 text-[10px] uppercase tracking-wider mb-1 font-light">Final Value</div>
+                <div class="text-lg font-light font-mono">${{ metrics.final_value_yes|floatformat:2 }}</div>
+            </div>
+            <div>
+                <div class="text-gray-400 text-[10px] uppercase tracking-wider mb-1 font-light">Total Spent</div>
+                <div class="text-lg font-light font-mono">${{ metrics.total_spent|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NO Scenario -->
+    <div class="bg-white rounded-[40px] p-8 md:p-10 text-black relative overflow-hidden border border-black group">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <span class="text-red-600 uppercase tracking-widest text-[10px] font-bold mb-1 block">Scenario B</span>
+                <h3 class="text-3xl font-thin tracking-tight">Outcome: NO</h3>
+            </div>
+            <div class="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center text-red-600">
+                <i data-lucide="x-circle" width="20"></i>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <span class="text-gray-400 uppercase tracking-widest text-[10px] font-light mb-1 block">Estimated PnL</span>
+            <div
+                class="text-5xl md:text-6xl font-thin tracking-tighter {% if metrics.pnl_no >= 0 %}text-black{% else %}text-red-500{% endif %}">
+                ${{ metrics.pnl_no|floatformat:2 }}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 border-t border-black/5 pt-6">
+            <div>
+                <div class="text-gray-400 text-[10px] uppercase tracking-wider mb-1 font-light">Final Value</div>
+                <div class="text-lg font-light font-mono">${{ metrics.final_value_no|floatformat:2 }}</div>
+            </div>
+            <div>
+                <div class="text-gray-400 text-[10px] uppercase tracking-wider mb-1 font-light">Total Spent</div>
+                <div class="text-lg font-light font-mono">${{ metrics.total_spent|floatformat:2 }}</div>
             </div>
         </div>
     </div>
@@ -40,11 +71,15 @@
     <!-- Chart Card -->
     <div class="bg-white rounded-[32px] p-8 border border-black h-[400px] flex flex-col">
         <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-6">Position Analysis</h3>
-        <div
-            class="flex-1 w-full h-full flex items-center justify-center bg-gray-50 rounded-2xl overflow-hidden relative">
+        <a href="{% url 'analyzer:view_chart' %}" target="_blank"
+            class="flex-1 w-full h-full flex items-center justify-center bg-gray-50 rounded-2xl overflow-hidden relative group/chart">
             <img src="{% url 'analyzer:view_chart' %}" alt="Trade Analysis Chart"
-                class="w-full h-full object-cover opacity-90 mix-blend-multiply">
-        </div>
+                class="w-full h-full object-cover opacity-90 mix-blend-multiply transition-transform duration-500 group-hover/chart:scale-110">
+            <div
+                class="absolute inset-0 bg-black/0 group-hover/chart:bg-black/5 transition-colors flex items-center justify-center opacity-0 group-hover/chart:opacity-100">
+                <i data-lucide="maximize-2" class="text-black" width="24"></i>
+            </div>
+        </a>
     </div>
 
     <!-- Volume Cards -->

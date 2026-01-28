@@ -111,6 +111,11 @@ def fetch_trades(request):
     request.session['market_title'] = all_trades[0].get('title', 'Unknown Market')
     request.session['condition_id'] = condition_id
     
+    # Автоматически определяем resolved_side
+    inferred, _ = infer_resolved_side_from_trades(all_trades)
+    if inferred:
+        request.session['resolved_side'] = inferred
+
     return render(request, 'analyzer/partials/trades_loaded.html', {
         'trade_count': len(all_trades),
         'market_title': request.session['market_title']
@@ -142,6 +147,11 @@ def upload_trades(request):
     request.session['market_title'] = raw_data[0].get('title', 'Unknown Market')
     request.session['condition_id'] = raw_data[0].get('conditionId', '')
     
+    # Автоматически определяем resolved_side
+    inferred, _ = infer_resolved_side_from_trades(raw_data)
+    if inferred:
+        request.session['resolved_side'] = inferred
+
     return render(request, 'analyzer/partials/trades_loaded.html', {
         'trade_count': len(raw_data),
         'market_title': request.session['market_title']
@@ -337,12 +347,13 @@ def calculate_metrics(parsed, resolved_side):
     remaining_no = no_sh_curve[-1] if no_sh_curve else 0
     total_spent = net_curve[-1] if net_curve else 0
     
-    if resolved_side == "YES":
-        final_value = remaining_yes * 1.0
-    else:
-        final_value = remaining_no * 1.0
+    # YES Outcome
+    final_value_yes = remaining_yes * 1.0
+    pnl_yes = final_value_yes - total_spent
     
-    pnl = final_value - total_spent
+    # NO Outcome
+    final_value_no = remaining_no * 1.0
+    pnl_no = final_value_no - total_spent
     
     # Buy/Sell totals
     yes_buy_sh = yes_buy_cost = 0
@@ -417,9 +428,11 @@ def calculate_metrics(parsed, resolved_side):
         'trade_count': len(parsed),
         'remaining_yes': remaining_yes,
         'remaining_no': remaining_no,
-        'final_value': final_value,
+        'final_value_yes': final_value_yes,
+        'final_value_no': final_value_no,
         'total_spent': total_spent,
-        'pnl': pnl,
+        'pnl_yes': pnl_yes,
+        'pnl_no': pnl_no,
         'yes_buy_sh': yes_buy_sh,
         'yes_buy_cost': yes_buy_cost,
         'yes_sell_sh': yes_sell_sh,
@@ -670,12 +683,13 @@ def generate_chart(parsed, metrics, market_title, resolved_side):
     )
     
     pnl_text = (
-        f"MARKET RESOLVED: {resolved_side}\n\n"
-        f"Remaining YES shares: {metrics['remaining_yes']:.2f}\n"
-        f"Remaining NO shares:  {metrics['remaining_no']:.2f}\n\n"
-        f"Final Value: $ {metrics['final_value']:.2f}\n"
-        f"Total Spent (net exposure): $ {metrics['total_spent']:.2f}\n\n"
-        f"FINAL PNL: $ {metrics['pnl']:.2f}"
+        f"IF RESOLVED YES:\n"
+        f"Final Value: $ {metrics['final_value_yes']:.2f}\n"
+        f"PNL: $ {metrics['pnl_yes']:.2f}\n\n"
+        f"IF RESOLVED NO:\n"
+        f"Final Value: $ {metrics['final_value_no']:.2f}\n"
+        f"PNL: $ {metrics['pnl_no']:.2f}\n\n"
+        f"Total Spent: $ {metrics['total_spent']:.2f}"
     )
     
     fig.text(0.01, 0.01, summary, ha="left", va="bottom", fontsize=11,
@@ -765,9 +779,15 @@ def generate_text_report(market_title, resolved_side, parsed, metrics):
         "--- Position at resolution ---",
         f"Remaining YES shares: {metrics['remaining_yes']:.2f}",
         f"Remaining NO shares:  {metrics['remaining_no']:.2f}",
-        f"Final value: $ {metrics['final_value']:.2f}",
         f"Total spent (net exposure): $ {metrics['total_spent']:.2f}",
-        f"FINAL PNL: $ {metrics['pnl']:.2f}",
+        "",
+        f"IF RESOLVED YES:",
+        f"  Final value: $ {metrics['final_value_yes']:.2f}",
+        f"  PnL:         $ {metrics['pnl_yes']:.2f}",
+        "",
+        f"IF RESOLVED NO:",
+        f"  Final value: $ {metrics['final_value_no']:.2f}",
+        f"  PnL:         $ {metrics['pnl_no']:.2f}",
         "",
         "--- Buy/Sell totals ---",
         f"YES buys:  {metrics['yes_buy_sh']:.2f} sh / $ {metrics['yes_buy_cost']:.2f}",
