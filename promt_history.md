@@ -16,3 +16,20 @@
     analyzer/:439 Uncaught TypeError: Cannot read properties of undefined (reading '$data')
         at HTMLInputElement.<anonymous> (analyzer/:439:63)
     (anonymous)	@	analyzer/:439
+
+6. (antigravity) Нужно исправть следующие моменты:
+    1) Иконка стрелки должна быть всегда черной при наведении или при клике
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="arrow-right" aria-hidden="true" class="lucide lucide-arrow-right"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+
+    2) left sider bar должен находиться на одной высоте с основным блоком, из-за отступов он смещен вниз относительно основного блока
+
+    3) Resolution - не имеет смысла, нам не нужно знать как закрылась сделка
+
+    4) из-за этого блока образуется пустное пространство после текста Performance <div id="analysis-loading" class="htmx-indicator w-full h-64 flex items-center justify-center">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+                            </div>
+
+    5) Мы должны иметь возможность кликнуть по миниатиюре Position Analysis чтобы увидеть полную картинку
+
+    6.1 Давай подумаем шаг за шагом и проанализируем код. Когда я нажимаю на маркет ничего не происходит меня не перекидывает к дальнейшему этапу

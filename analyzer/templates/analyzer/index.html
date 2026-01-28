@@ -58,6 +58,18 @@
         completedSteps: [1],
         marketTitle: 'Market',
         
+        init() {
+            window.addEventListener('market-selected', (e) => {
+                this.marketSelected(e.detail.title);
+            });
+            window.addEventListener('trades-loaded', () => {
+                this.tradesLoaded();
+            });
+            window.addEventListener('resolved-set', () => {
+                this.resolvedSet();
+            });
+        },
+        
         isActive(step) {
             return this.currentStep === step;
         },
@@ -423,7 +435,6 @@
 
             // Logic to handle auto-advancing based on which target was updated
             if (evt.detail.target.id === 'search-results') {
-                // Just showing results, don't advance yet.
                 // Bind click events to search results
                 const radios = document.querySelectorAll('input[name="selected_market"]');
                 radios.forEach(radio => {
@@ -435,20 +446,20 @@
                         // Get title safely
                         let title = this.dataset.title || "Market";
 
-                        // Call Alpine
-                        document.querySelector('[x-data]').__x.$data.marketSelected(title);
+                        // Dispatch custom event that Alpine will catch
+                        window.dispatchEvent(new CustomEvent('market-selected', { detail: { title } }));
                     });
                 });
             }
 
             if (evt.detail.target.id === 'trades-result') {
                 if (evt.detail.target.innerHTML.includes('Success') || evt.detail.target.innerHTML.includes('✓')) {
-                    document.querySelector('[x-data]').__x.$data.tradesLoaded();
+                    window.dispatchEvent(new CustomEvent('trades-loaded'));
                 }
             }
 
             if (evt.detail.target.id === 'resolved-result') {
-                document.querySelector('[x-data]').__x.$data.resolvedSet();
+                window.dispatchEvent(new CustomEvent('resolved-set'));
                 // Auto trigger generation for Step 4
                 setTimeout(() => {
                     htmx.trigger('#generate-btn', 'click');
