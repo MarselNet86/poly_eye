@@ -170,3 +170,185 @@
         </button>
     </a>
 </div>
+
+<!-- Interactive Trade Chart Section -->
+<div class="mt-16 pt-16 border-t border-black/5">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h3 class="text-3xl font-thin tracking-tight text-black">Interactive Timeline</h3>
+            <p class="text-gray-400 text-sm font-light mt-1 uppercase tracking-wider">Execution Points & Price Action
+            </p>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex bg-gray-100 p-1 rounded-2xl border border-black/5">
+            <button onclick="toggleChartSeries('ALL')" id="btn-all"
+                class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all bg-black text-white">All</button>
+            <button onclick="toggleChartSeries('UP')" id="btn-up"
+                class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-black">UP
+                only</button>
+            <button onclick="toggleChartSeries('DOWN')" id="btn-down"
+                class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-black">DOWN
+                only</button>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-[40px] p-6 md:p-10 border border-black overflow-hidden relative">
+        <div id="interactive-chart" style="min-height: 450px;"></div>
+    </div>
+</div>
+
+<script>
+    // Data setup
+    var rawTrades = {{ trades_json| safe }};
+    var sortedTrades = [...rawTrades].sort((a, b) => a.timestamp - b.timestamp);
+
+    var priceData = sortedTrades.map(t => ({
+        x: t.timestamp * 1000,
+        y: t.price
+    }));
+
+    var upTrades = sortedTrades.filter(t => t.side === 'Up').map(t => ({
+        x: t.timestamp * 1000,
+        y: t.price,
+        meta: { shares: t.shares, cost: t.cost, side: 'UP', type: t.type }
+    }));
+
+    var downTrades = sortedTrades.filter(t => t.side === 'Down').map(t => ({
+        x: t.timestamp * 1000,
+        y: t.price,
+        meta: { shares: t.shares, cost: t.cost, side: 'DOWN', type: t.type }
+    }));
+
+    var options = {
+        series: [
+            {
+                name: 'Market Price',
+                type: 'line',
+                data: priceData
+            },
+            {
+                name: 'UP Trades',
+                type: 'scatter',
+                data: upTrades
+            },
+            {
+                name: 'DOWN Trades',
+                type: 'scatter',
+                data: downTrades
+            }
+        ],
+        chart: {
+            height: 500,
+            type: 'line',
+            toolbar: { show: false },
+            animations: { enabled: true },
+            fontFamily: 'inherit'
+        },
+        colors: ['#000000', '#10B981', '#EF4444'],
+        stroke: {
+            width: [1, 0, 0],
+            curve: 'stepline'
+        },
+        markers: {
+            size: [0, 8, 8],
+            strokeWidth: 2,
+            strokeColors: '#fff',
+            hover: { size: 10 }
+        },
+        xaxis: {
+            type: 'datetime',
+            labels: {
+                datetimeUTC: false,
+                style: { colors: '#9CA3AF', fontSize: '10px' }
+            },
+            axisBorder: { show: false },
+            axisTicks: { show: false }
+        },
+        yaxis: {
+            labels: {
+                formatter: (val) => val.toFixed(2) + '¢',
+                style: { colors: '#9CA3AF', fontSize: '10px' }
+            }
+        },
+        grid: {
+            borderColor: '#000000',
+            strokeDashArray: 0,
+            opacity: 0.05,
+            padding: { left: 20, right: 20 }
+        },
+        tooltip: {
+            shared: false,
+            intersect: true,
+            theme: 'light',
+            custom: function ({ series, seriesIndex, dataPointIndex, w }) {
+                const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
+                if (!data) return '';
+
+                if (!data.meta) {
+                    return '<div class="p-4 bg-white border border-black rounded-2xl shadow-xl">' +
+                        '<span class="text-[10px] text-gray-400 uppercase block mb-1">Price</span>' +
+                        '<span class="text-xl font-thin tracking-tight">' + data.y.toFixed(2) + '¢</span>' +
+                        '</div>';
+                }
+
+                const meta = data.meta;
+                const date = new Date(data.x);
+                const yektTime = date.toLocaleString('ru-RU', {
+                    timeZone: 'Asia/Yekaterinburg',
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+
+                return `<div class="p-5 bg-white border border-black rounded-3xl shadow-2xl min-w-[220px]">
+                        <div class="flex justify-between items-start mb-4 gap-4">
+                            <span class="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${meta.side === 'UP' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}">${meta.side} ${meta.type}</span>
+                            <span class="text-[10px] text-gray-400 font-mono text-right leading-tight">${yektTime}</span>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Position Size</span>
+                                <div class="text-xl font-thin tracking-tight">${meta.shares.toLocaleString()} Shares</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 pt-3 border-t border-black/5">
+                                <div>
+                                    <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Exec Price</span>
+                                    <span class="text-sm font-mono">${data.y.toFixed(2)}¢</span>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Total Cost</span>
+                                    <span class="text-sm font-mono">$${meta.cost.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+        },
+        legend: { show: false }
+    };
+
+    var chart = new ApexCharts(document.querySelector("#interactive-chart"), options);
+    chart.render();
+
+    window.toggleChartSeries = function (type) {
+        ['all', 'up', 'down'].forEach(id => {
+            const el = document.getElementById('btn-' + id);
+            if (el) el.className = "px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-black";
+        });
+        const activeEl = document.getElementById('btn-' + type.toLowerCase());
+        if (activeEl) activeEl.className = "px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all bg-black text-white";
+
+        if (type === 'ALL') {
+            chart.showSeries('UP Trades');
+            chart.showSeries('DOWN Trades');
+        } else if (type === 'UP') {
+            chart.showSeries('UP Trades');
+            chart.hideSeries('DOWN Trades');
+        } else {
+            chart.hideSeries('UP Trades');
+            chart.showSeries('DOWN Trades');
+        }
+    };
+
+    if (window.lucide) window.lucide.createIcons();
+</script>

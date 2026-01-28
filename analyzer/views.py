@@ -42,6 +42,7 @@ def search_market(request):
         resp = requests.get(SEARCH_URL, params={"q": query}, timeout=10)
         resp.raise_for_status()
         data = resp.json()
+
     except requests.RequestException as exc:
         return JsonResponse({'error': f'API Error: {str(exc)}'}, status=500)
     
@@ -235,7 +236,8 @@ def generate_analysis(request):
     return render(request, 'analyzer/partials/analysis_complete.html', {
         'metrics': metrics,
         'market_title': market_title,
-        'resolved_side': resolved_side
+        'resolved_side': resolved_side,
+        'trades_json': json.dumps(parsed)
     })
 
 
