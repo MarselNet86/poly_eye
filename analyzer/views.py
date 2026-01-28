@@ -355,6 +355,27 @@ def calculate_metrics(parsed, resolved_side):
     final_value_no = remaining_no * 1.0
     pnl_no = final_value_no - total_spent
     
+    # Current (Mark-to-Market) PnL
+    # Find latest price for YES (Up) and NO (Down)
+    last_up_price = 0
+    last_down_price = 0
+    for e in reversed(parsed):
+        if not last_up_price and e["side"] == "Up":
+            last_up_price = e["price"]
+        if not last_down_price and e["side"] == "Down":
+            last_down_price = e["price"]
+        if last_up_price and last_down_price:
+            break
+            
+    # If one side is missing, infer it (YES price + NO price = 100 cents)
+    if last_up_price and not last_down_price:
+        last_down_price = 100.0 - last_up_price
+    elif last_down_price and not last_up_price:
+        last_up_price = 100.0 - last_down_price
+        
+    current_value = (remaining_yes * (last_up_price/100.0)) + (remaining_no * (last_down_price/100.0))
+    current_pnl = current_value - total_spent
+    
     # Buy/Sell totals
     yes_buy_sh = yes_buy_cost = 0
     yes_sell_sh = yes_sell_cost = 0
@@ -431,6 +452,8 @@ def calculate_metrics(parsed, resolved_side):
         'final_value_yes': final_value_yes,
         'final_value_no': final_value_no,
         'total_spent': total_spent,
+        'current_value': current_value,
+        'current_pnl': current_pnl,
         'pnl_yes': pnl_yes,
         'pnl_no': pnl_no,
         'yes_buy_sh': yes_buy_sh,
@@ -775,6 +798,8 @@ def generate_text_report(market_title, resolved_side, parsed, metrics):
         f"TRADES: {metrics['trade_count']}",
         f"TIME RANGE: {start_time} to {end_time}",
         f"PRICE RANGE: {min_price:.2f} - {max_price:.2f}",
+        f"CURRENT PNL (MtM): $ {metrics['current_pnl']:.2f}",
+        f"CURRENT VALUE:     $ {metrics['current_value']:.2f}",
         "",
         "--- Position at resolution ---",
         f"Remaining YES shares: {metrics['remaining_yes']:.2f}",
