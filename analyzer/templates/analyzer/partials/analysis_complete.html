@@ -58,8 +58,8 @@
                 <h3 class="text-3xl font-thin tracking-tight">Outcome: YES</h3>
             </div>
             {% if resolved_side == "YES" %}
-            <div class="px-3 py-1 bg-black rounded-lg flex items-center justify-center">
-                <span class="text-[10px] font-light text-white tracking-widest uppercase">WIN!</span>
+            <div class="px-5 py-2 bg-black rounded-xl flex items-center justify-center">
+                <span class="text-sm font-bold text-white tracking-widest uppercase">WIN!</span>
             </div>
             {% endif %}
         </div>
@@ -94,8 +94,8 @@
                 <h3 class="text-3xl font-thin tracking-tight">Outcome: NO</h3>
             </div>
             {% if resolved_side == "NO" %}
-            <div class="px-3 py-1 bg-black rounded-lg flex items-center justify-center">
-                <span class="text-[10px] font-light text-white tracking-widest uppercase">WIN!</span>
+            <div class="px-5 py-2 bg-black rounded-xl flex items-center justify-center">
+                <span class="text-sm font-bold text-white tracking-widest uppercase">WIN!</span>
             </div>
             {% endif %}
         </div>
@@ -205,15 +205,29 @@
             </button>
 
             <!-- Filters -->
-            <div class="flex bg-gray-100 p-1 rounded-2xl border border-black/5">
-                <button onclick="toggleChartSeries('ALL')" id="btn-all"
-                    class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all bg-black text-white">All</button>
-                <button onclick="toggleChartSeries('UP')" id="btn-up"
-                    class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-black">UP
-                    only</button>
-                <button onclick="toggleChartSeries('DOWN')" id="btn-down"
-                    class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-black">DOWN
-                    only</button>
+            <div class="flex items-center gap-6 bg-gray-100 p-1 rounded-2xl border border-black/5 pr-4">
+                <div class="flex items-center gap-2 pl-3 border-r border-black/5 mr-1">
+                    <label class="relative inline-flex items-center cursor-pointer group">
+                        <input type="checkbox" id="ev-toggle" class="sr-only peer" checked
+                            onchange="toggleEVSeries(this.checked)">
+                        <div
+                            class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500">
+                        </div>
+                        <span
+                            class="ml-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-black transition-colors">EV
+                            Line</span>
+                    </label>
+                </div>
+                <div class="flex gap-1">
+                    <button onclick="toggleChartSeries('ALL')" id="btn-all"
+                        class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all bg-black text-white">All</button>
+                    <button onclick="toggleChartSeries('UP')" id="btn-up"
+                        class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-black">UP
+                        only</button>
+                    <button onclick="toggleChartSeries('DOWN')" id="btn-down"
+                        class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-black">DOWN
+                        only</button>
+                </div>
             </div>
         </div>
 
@@ -259,20 +273,45 @@
 
     var priceData = sortedTrades.map(t => ({
         x: t.timestamp * 1000,
-        y: t.price
+        y: t.price / 100
     }));
+
+    // Calculate EV (Expected Value) History for tooltip injection
+    var lastYesVal = 0;
+    var lastNoVal = 0;
+    var evTimeline = {};
+    sortedTrades.forEach(t => {
+        if (t.side === 'Up') lastYesVal = t.price;
+        if (t.side === 'Down') lastNoVal = t.price;
+        if (lastYesVal > 0 && lastNoVal > 0) {
+            evTimeline[t.timestamp] = (lastYesVal + lastNoVal).toFixed(2);
+        }
+    });
 
     var upTrades = sortedTrades.filter(t => t.side === 'Up').map(t => ({
         x: t.timestamp * 1000,
-        y: t.price,
-        meta: { shares: t.shares, cost: t.cost, side: 'UP', type: t.type }
+        y: t.price / 100,
+        meta: {
+            shares: t.shares,
+            cost: t.cost,
+            side: 'UP',
+            type: t.type,
+            ev: (evTimeline[t.timestamp] / 100).toFixed(2) || 'N/A'
+        }
     }));
 
     var downTrades = sortedTrades.filter(t => t.side === 'Down').map(t => ({
         x: t.timestamp * 1000,
-        y: t.price,
-        meta: { shares: t.shares, cost: t.cost, side: 'DOWN', type: t.type }
+        y: t.price / 100,
+        meta: {
+            shares: t.shares,
+            cost: t.cost,
+            side: 'DOWN',
+            type: t.type,
+            ev: (evTimeline[t.timestamp] / 100).toFixed(2) || 'N/A'
+        }
     }));
+
 
     var options = {
         series: [
@@ -290,6 +329,20 @@
                 name: 'DOWN Trades',
                 type: 'scatter',
                 data: downTrades
+            },
+            {
+                name: 'EV (YES+NO)',
+                type: 'line',
+                data: sortedTrades.map(t => {
+                    const val = evTimeline[t.timestamp];
+                    if (!val) return null;
+                    const decimalVal = (parseFloat(val) / 100).toFixed(2);
+                    return {
+                        x: t.timestamp * 1000,
+                        y: parseFloat(decimalVal),
+                        meta: { side: 'EV', ev: decimalVal }
+                    };
+                }).filter(p => p !== null)
             }
         ],
         chart: {
@@ -299,13 +352,13 @@
             animations: { enabled: true },
             fontFamily: 'inherit'
         },
-        colors: ['#000000', '#10B981', '#EF4444'],
+        colors: ['#000000', '#10B981', '#EF4444', '#F97316'],
         stroke: {
-            width: [1, 0, 0],
-            curve: 'stepline'
+            width: [1, 0, 0, 2],
+            curve: ['stepline', 'smooth', 'smooth', 'smooth']
         },
         markers: {
-            size: [0, 8, 8],
+            size: [0, 8, 8, 0],
             strokeWidth: 2,
             strokeColors: '#fff',
             hover: { size: 10 }
@@ -321,7 +374,7 @@
         },
         yaxis: {
             labels: {
-                formatter: (val) => val.toFixed(2) + '¢',
+                formatter: (val) => val.toFixed(2),
                 style: { colors: '#9CA3AF', fontSize: '10px' }
             }
         },
@@ -344,7 +397,7 @@
                 if (!data.meta) {
                     return '<div class="p-4 bg-white border border-black rounded-2xl shadow-xl pointer-events-none">' +
                         '<span class="text-[10px] text-gray-400 uppercase block mb-1">Price</span>' +
-                        '<span class="text-xl font-thin tracking-tight">' + data.y.toFixed(2) + '¢</span>' +
+                        '<span class="text-xl font-thin tracking-tight">' + data.y.toFixed(2) + '</span>' +
                         '</div>';
                 }
 
@@ -356,6 +409,21 @@
                     hour: '2-digit', minute: '2-digit', second: '2-digit'
                 });
 
+                // Dedicated EV Tooltip Case
+                if (meta.side === 'EV') {
+                    return `<div class="p-5 bg-white border border-black rounded-3xl shadow-2xl min-w-[220px] pointer-events-none">
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest bg-gray-50 text-gray-600">EV Indicator</span>
+                                <span class="text-[10px] text-gray-400 font-mono text-right leading-tight">${yektTime}</span>
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Price Efficiency</span>
+                                <div class="text-3xl font-normal tracking-tighter text-black">EV: ${meta.ev}</div>
+                            </div>
+                        </div>`;
+                }
+
+                // Standard Trade Tooltip Case
                 return `<div class="p-5 bg-white border border-black rounded-3xl shadow-2xl min-w-[220px] pointer-events-none">
                         <div class="flex justify-between items-start mb-4 gap-4">
                             <span class="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${meta.side === 'UP' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}">${meta.side} ${meta.type}</span>
@@ -364,17 +432,22 @@
                         <div class="space-y-4">
                             <div>
                                 <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Position Size</span>
-                                <div class="text-xl font-thin tracking-tight">${meta.shares.toLocaleString()} Shares</div>
+                                <div class="text-xl font-normal text-black tracking-tight">${meta.shares.toLocaleString()} Shares</div>
                             </div>
                             <div class="grid grid-cols-2 gap-4 pt-3 border-t border-black/5">
                                 <div>
                                     <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Exec Price</span>
-                                    <span class="text-sm font-mono">${data.y.toFixed(2)}¢</span>
+                                    <span class="text-xl font-normal text-black">${data.y.toFixed(2)}</span>
                                 </div>
                                 <div>
                                     <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Total Cost</span>
-                                    <span class="text-sm font-mono">$${meta.cost.toFixed(2)}</span>
+                                    <span class="text-xl font-normal text-black">$${meta.cost.toFixed(2)}</span>
                                 </div>
+                            </div>
+                            <!-- EV Indicator Row -->
+                            <div class="pt-3 border-t border-black/5">
+                                <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">EV Indicator</span>
+                                <div class="text-xl font-normal text-black">EV: ${meta.ev}</div>
                             </div>
                         </div>
                     </div>`;
