@@ -276,39 +276,77 @@
         y: t.price / 100
     }));
 
-    // Calculate EV (Expected Value) History for tooltip injection
+    // Track running totals for YES (Up) and NO (Down) positions
+    var runningYesShares = 0;
+    var runningNoShares = 0;
     var lastYesVal = 0;
     var lastNoVal = 0;
     var evTimeline = {};
+    var exposureTimeline = {};
+
+    // Micro-jittering setup - увеличенное смещение для видимости всех точек
+    var lastTimestamp = 0;
+    var jitterOffset = 0;
+    var JITTER_STEP = 100; // 100ms между точками с одинаковой меткой
+
     sortedTrades.forEach(t => {
+        // Apply jitter
+        if (t.timestamp === lastTimestamp) {
+            jitterOffset += JITTER_STEP;
+        } else {
+            jitterOffset = 0;
+            lastTimestamp = t.timestamp;
+        }
+        t.jitteredTs = (t.timestamp * 1000) + jitterOffset;
+
+
+
+
+        if (t.side === 'Up') {
+            if (t.type === 'Buy') runningYesShares += t.shares;
+            else runningYesShares -= t.shares;
+        } else if (t.side === 'Down') {
+            if (t.type === 'Buy') runningNoShares += t.shares;
+            else runningNoShares -= t.shares;
+        }
+
+        exposureTimeline[t.jitteredTs] = {
+            yes: runningYesShares,
+            no: runningNoShares,
+            yesVal: (runningYesShares * (t.side === 'Up' ? t.price : lastYesVal) / 100).toFixed(2),
+            noVal: (runningNoShares * (t.side === 'Down' ? t.price : lastNoVal) / 100).toFixed(2)
+        };
+
         if (t.side === 'Up') lastYesVal = t.price;
         if (t.side === 'Down') lastNoVal = t.price;
         if (lastYesVal > 0 && lastNoVal > 0) {
-            evTimeline[t.timestamp] = (lastYesVal + lastNoVal).toFixed(2);
+            evTimeline[t.jitteredTs] = (lastYesVal + lastNoVal).toFixed(2);
         }
     });
 
     var upTrades = sortedTrades.filter(t => t.side === 'Up').map(t => ({
-        x: t.timestamp * 1000,
+        x: t.jitteredTs,
         y: t.price / 100,
         meta: {
             shares: t.shares,
             cost: t.cost,
             side: 'UP',
             type: t.type,
-            ev: (evTimeline[t.timestamp] / 100).toFixed(2) || 'N/A'
+            ev: (evTimeline[t.jitteredTs] / 100).toFixed(2) || 'N/A',
+            exposure: exposureTimeline[t.jitteredTs]
         }
     }));
 
     var downTrades = sortedTrades.filter(t => t.side === 'Down').map(t => ({
-        x: t.timestamp * 1000,
+        x: t.jitteredTs,
         y: t.price / 100,
         meta: {
             shares: t.shares,
             cost: t.cost,
             side: 'DOWN',
             type: t.type,
-            ev: (evTimeline[t.timestamp] / 100).toFixed(2) || 'N/A'
+            ev: (evTimeline[t.jitteredTs] / 100).toFixed(2) || 'N/A',
+            exposure: exposureTimeline[t.jitteredTs]
         }
     }));
 
@@ -334,11 +372,11 @@
                 name: 'EV (YES+NO)',
                 type: 'line',
                 data: sortedTrades.map(t => {
-                    const val = evTimeline[t.timestamp];
+                    const val = evTimeline[t.jitteredTs];
                     if (!val) return null;
                     const decimalVal = (parseFloat(val) / 100).toFixed(2);
                     return {
-                        x: t.timestamp * 1000,
+                        x: t.jitteredTs,
                         y: parseFloat(decimalVal),
                         meta: { side: 'EV', ev: decimalVal }
                     };
@@ -417,8 +455,8 @@
                                 <span class="text-[10px] text-gray-400 font-mono text-right leading-tight">${yektTime}</span>
                             </div>
                             <div class="space-y-1">
-                                <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Price Efficiency</span>
-                                <div class="text-3xl font-normal tracking-tighter text-black">EV: ${meta.ev}</div>
+                                <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5 font-light">Price Efficiency</span>
+                                <div class="text-2xl font-light tracking-tighter text-black">EV: ${meta.ev}</div>
                             </div>
                         </div>`;
                 }
@@ -431,23 +469,45 @@
                         </div>
                         <div class="space-y-4">
                             <div>
-                                <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Position Size</span>
-                                <div class="text-xl font-normal text-black tracking-tight">${meta.shares.toLocaleString()} Shares</div>
+                                <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5 font-light">Position Size</span>
+                                <div class="text-lg font-light text-black tracking-tight">${meta.shares.toLocaleString()} Shares</div>
                             </div>
                             <div class="grid grid-cols-2 gap-4 pt-3 border-t border-black/5">
                                 <div>
-                                    <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Exec Price</span>
-                                    <span class="text-xl font-normal text-black">${data.y.toFixed(2)}</span>
+                                    <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5 font-light">Exec Price</span>
+                                    <span class="text-base font-light text-black">${data.y.toFixed(2)}</span>
                                 </div>
                                 <div>
-                                    <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Total Cost</span>
-                                    <span class="text-xl font-normal text-black">$${meta.cost.toFixed(2)}</span>
+                                    <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5 font-light">Total Cost</span>
+                                    <span class="text-base font-light text-black">$${meta.cost.toFixed(2)}</span>
                                 </div>
                             </div>
-                            <!-- EV Indicator Row -->
+                            
+                            <!-- Portfolio Exposure Block -->
                             <div class="pt-3 border-t border-black/5">
-                                <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">EV Indicator</span>
-                                <div class="text-xl font-normal text-black">EV: ${meta.ev}</div>
+                                <span class="text-[9px] text-gray-400 uppercase tracking-widest block mb-2 font-light">Portfolio Exposure</span>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="flex flex-col gap-1">
+                                        <span class="text-[8px] text-green-600 font-bold uppercase tracking-wider">YES Side</span>
+                                        <div class="flex flex-col leading-none">
+                                            <span class="text-base font-light text-black">${meta.exposure.yes.toLocaleString()}</span>
+                                            <span class="text-base font-light text-black mt-0.5">$${meta.exposure.yesVal}</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col gap-1">
+                                        <span class="text-[8px] text-red-600 font-bold uppercase tracking-wider">NO Side</span>
+                                        <div class="flex flex-col leading-none">
+                                            <span class="text-base font-light text-black">${meta.exposure.no.toLocaleString()}</span>
+                                            <span class="text-base font-light text-black mt-0.5">$${meta.exposure.noVal}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- EV Indicator Row -->
+                            <div class="pt-3 border-t border-black/5 flex justify-between items-center">
+                                <span class="text-[9px] text-gray-400 uppercase tracking-widest block font-light">EV Indicator</span>
+                                <div class="text-base font-light text-black">EV: ${meta.ev}</div>
                             </div>
                         </div>
                     </div>`;
@@ -476,6 +536,14 @@
         } else {
             chart.hideSeries('UP Trades');
             chart.showSeries('DOWN Trades');
+        }
+    };
+
+    window.toggleEVSeries = function (isChecked) {
+        if (isChecked) {
+            chart.showSeries('EV (YES+NO)');
+        } else {
+            chart.hideSeries('EV (YES+NO)');
         }
     };
 
