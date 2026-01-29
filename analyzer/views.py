@@ -277,9 +277,14 @@ def infer_resolved_side_from_trades(trades, threshold=PRICE_RESOLUTION_THRESHOLD
     
     latest = max(trades, key=lambda t: t.get("timestamp", 0))
     price = float(latest.get("price", 0))
-    outcome = latest.get("outcome", "").lower()
+    raw_outcome = latest.get("outcome", "").strip().upper()
     
-    if outcome not in {"up", "down"}:
+    # Нормализация для логики вывода
+    if raw_outcome in {"UP", "YES"}:
+        outcome = "up"
+    elif raw_outcome in {"DOWN", "NO"}:
+        outcome = "down"
+    else:
         return None, latest
     
     if price >= threshold:
@@ -299,7 +304,16 @@ def parse_trades(raw_data):
         raw_side = item.get("side", "BUY").upper()
         entry["type"] = "Buy" if raw_side == "BUY" else "Sell"
         entry["market"] = item.get("title", "")
-        entry["side"] = item.get("outcome", "Up")
+        
+        # Нормализация стороны (YES/NO -> Up/Down)
+        raw_outcome = item.get("outcome", "Up").strip().upper()
+        if raw_outcome in {"YES", "UP"}:
+            entry["side"] = "Up"
+        elif raw_outcome in {"NO", "DOWN"}:
+            entry["side"] = "Down"
+        else:
+            entry["side"] = "Up"  # Default fallback
+            
         entry["price"] = float(item.get("price", 0)) * 100.0  # Convert to cents
         entry["shares"] = float(item.get("size", 0))
         entry["cost"] = float(item.get("price", 0)) * entry["shares"]
@@ -347,15 +361,30 @@ def calculate_metrics(parsed, resolved_side):
     # Final PNL
     remaining_yes = yes_sh_curve[-1] if yes_sh_curve else 0
     remaining_no = no_sh_curve[-1] if no_sh_curve else 0
-    total_spent = net_curve[-1] if net_curve else 0
+    # Buy stats for cost basis
+    yes_buys_cost = sum(e["cost"] for e in parsed if e["side"] == "Up" and e["type"] == "Buy")
+    yes_buys_sh = sum(e["shares"] for e in parsed if e["side"] == "Up" and e["type"] == "Buy")
+    no_buys_cost = sum(e["cost"] for e in parsed if e["side"] == "Down" and e["type"] == "Buy")
+    no_buys_sh = sum(e["shares"] for e in parsed if e["side"] == "Down" and e["type"] == "Buy")
     
-    # YES Outcome
+    avg_price_yes = (yes_buys_cost / yes_buys_sh) if yes_buys_sh > 0 else 0
+    avg_price_no = (no_buys_cost / no_buys_sh) if no_buys_sh > 0 else 0
+    
+    # YES Outcome PnL (Cost of remaining shares + Lost capital from opposite side)
     final_value_yes = remaining_yes * 1.0
-    pnl_yes = final_value_yes - total_spent
+    cost_basis_yes = remaining_yes * avg_price_yes
+    pnl_yes = final_value_yes - cost_basis_yes - no_exp  # Assuming NO exposure is lost
+    # Note: If no_exp is negative (profit already taken on NO), it correctly adds to PnL
+    pnl_yes_pct = (pnl_yes / cost_basis_yes * 100) if cost_basis_yes > 0 else 0
     
-    # NO Outcome
+    # NO Outcome PnL
     final_value_no = remaining_no * 1.0
-    pnl_no = final_value_no - total_spent
+    cost_basis_no = remaining_no * avg_price_no
+    pnl_no = final_value_no - cost_basis_no - yes_exp
+    pnl_no_pct = (pnl_no / cost_basis_no * 100) if cost_basis_no > 0 else 0
+    
+    # Use global total_spent for the main dashboard total metric
+    total_spent = net_curve[-1] if net_curve else 0
     
     # Current (Mark-to-Market) PnL
     # Find latest price for YES (Up) and NO (Down)
@@ -377,6 +406,17 @@ def calculate_metrics(parsed, resolved_side):
         
     current_value = (remaining_yes * (last_up_price/100.0)) + (remaining_no * (last_down_price/100.0))
     current_pnl = current_value - total_spent
+    current_pnl_pct = (current_pnl / total_spent * 100) if total_spent > 0 else 0
+
+    # If resolved, OVERRIDE current metrics with the actual outcome
+    if resolved_side == "YES":
+        current_pnl = pnl_yes
+        current_pnl_pct = pnl_yes_pct
+        current_value = final_value_yes
+    elif resolved_side == "NO":
+        current_pnl = pnl_no
+        current_pnl_pct = pnl_no_pct
+        current_value = final_value_no
     
     # Buy/Sell totals
     yes_buy_sh = yes_buy_cost = 0
@@ -449,42 +489,45 @@ def calculate_metrics(parsed, resolved_side):
     
     return {
         'trade_count': len(parsed),
-        'remaining_yes': remaining_yes,
-        'remaining_no': remaining_no,
-        'final_value_yes': final_value_yes,
-        'final_value_no': final_value_no,
-        'total_spent': total_spent,
-        'current_value': current_value,
-        'current_pnl': current_pnl,
-        'pnl_yes': pnl_yes,
-        'pnl_no': pnl_no,
-        'yes_buy_sh': yes_buy_sh,
-        'yes_buy_cost': yes_buy_cost,
-        'yes_sell_sh': yes_sell_sh,
-        'yes_sell_cost': yes_sell_cost,
-        'no_buy_sh': no_buy_sh,
-        'no_buy_cost': no_buy_cost,
-        'no_sell_sh': no_sell_sh,
-        'no_sell_cost': no_sell_cost,
-        'cum_yes_total': cum_yes_total,
-        'cum_no_total': cum_no_total,
-        'cum_yes_cost_total': cum_yes_cost_total,
-        'cum_no_cost_total': cum_no_cost_total,
+        'remaining_yes': float(remaining_yes),
+        'remaining_no': float(remaining_no),
+        'final_value_yes': float(final_value_yes),
+        'final_value_no': float(final_value_no),
+        'total_spent': float(total_spent),
+        'current_value': float(current_value),
+        'current_pnl': float(current_pnl),
+        'current_pnl_pct': float(current_pnl_pct),
+        'pnl_yes': float(pnl_yes),
+        'pnl_yes_pct': float(pnl_yes_pct),
+        'pnl_no': float(pnl_no),
+        'pnl_no_pct': float(pnl_no_pct),
+        'yes_buy_sh': float(yes_buy_sh),
+        'yes_buy_cost': float(yes_buy_cost),
+        'yes_sell_sh': float(yes_sell_sh),
+        'yes_sell_cost': float(yes_sell_cost),
+        'no_buy_sh': float(no_buy_sh),
+        'no_buy_cost': float(no_buy_cost),
+        'no_sell_sh': float(no_sell_sh),
+        'no_sell_cost': float(no_sell_cost),
+        'cum_yes_total': float(cum_yes_total),
+        'cum_no_total': float(cum_no_total),
+        'cum_yes_cost_total': float(cum_yes_cost_total),
+        'cum_no_cost_total': float(cum_no_cost_total),
         'yes_peak_idx': yes_peak_idx,
         'no_peak_idx': no_peak_idx,
         'yes_sh_peak_idx': yes_sh_peak_idx,
         'no_sh_peak_idx': no_sh_peak_idx,
-        'yes_peak_val': yes_peak_val,
-        'no_peak_val': no_peak_val,
-        'yes_sh_peak_val': yes_sh_peak_val,
-        'no_sh_peak_val': no_sh_peak_val,
-        'yes_curve': yes_curve,
-        'no_curve': no_curve,
-        'net_curve': net_curve,
-        'yes_sh_curve': yes_sh_curve,
-        'no_sh_curve': no_sh_curve,
-        'net_sh_curve': net_sh_curve,
-        'prices': prices,
+        'yes_peak_val': float(yes_peak_val),
+        'no_peak_val': float(no_peak_val),
+        'yes_sh_peak_val': float(yes_sh_peak_val),
+        'no_sh_peak_val': float(no_sh_peak_val),
+        'yes_curve': [float(x) for x in yes_curve],
+        'no_curve': [float(x) for x in no_curve],
+        'net_curve': [float(x) for x in net_curve],
+        'yes_sh_curve': [float(x) for x in yes_sh_curve],
+        'no_sh_curve': [float(x) for x in no_sh_curve],
+        'net_sh_curve': [float(x) for x in net_sh_curve],
+        'prices': [float(x) for x in prices],
         'cum_yes': cum_yes.tolist(),
         'cum_no': cum_no.tolist(),
         'cum_yes_cost': cum_yes_cost.tolist(),
@@ -800,7 +843,7 @@ def generate_text_report(market_title, resolved_side, parsed, metrics):
         f"TRADES: {metrics['trade_count']}",
         f"TIME RANGE: {start_time} to {end_time}",
         f"PRICE RANGE: {min_price:.2f} - {max_price:.2f}",
-        f"CURRENT PNL (MtM): $ {metrics['current_pnl']:.2f}",
+        f"CURRENT PNL (MtM): $ {metrics['current_pnl']:.2f} ({metrics['current_pnl_pct']:.2f}%)",
         f"CURRENT VALUE:     $ {metrics['current_value']:.2f}",
         "",
         "--- Position at resolution ---",
@@ -810,11 +853,11 @@ def generate_text_report(market_title, resolved_side, parsed, metrics):
         "",
         f"IF RESOLVED YES:",
         f"  Final value: $ {metrics['final_value_yes']:.2f}",
-        f"  PnL:         $ {metrics['pnl_yes']:.2f}",
+        f"  PnL:         $ {metrics['pnl_yes']:.2f} ({metrics['pnl_yes_pct']:.2f}%)",
         "",
         f"IF RESOLVED NO:",
         f"  Final value: $ {metrics['final_value_no']:.2f}",
-        f"  PnL:         $ {metrics['pnl_no']:.2f}",
+        f"  PnL:         $ {metrics['pnl_no']:.2f} ({metrics['pnl_no_pct']:.2f}%)",
         "",
         "--- Buy/Sell totals ---",
         f"YES buys:  {metrics['yes_buy_sh']:.2f} sh / $ {metrics['yes_buy_cost']:.2f}",

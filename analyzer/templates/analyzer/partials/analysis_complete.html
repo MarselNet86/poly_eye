@@ -11,6 +11,7 @@
             <div
                 class="text-7xl md:text-9xl font-thin tracking-tighter {% if metrics.current_pnl >= 0 %}text-white{% else %}text-red-400{% endif %}">
                 ${{ metrics.current_pnl|floatformat:2 }}
+                <span class="text-3xl md:text-5xl opacity-40 ml-4">{{ metrics.current_pnl_pct|floatformat:1 }}%</span>
             </div>
             <div class="mt-8 flex justify-center md:justify-start gap-10">
                 <div>
@@ -30,12 +31,12 @@
                     <span class="text-gray-500 text-[10px] uppercase tracking-widest block mb-1">Exposure</span>
                     <div class="flex items-center gap-3">
                         <div class="h-2 w-2 rounded-full bg-green-500"></div>
-                        <span class="text-sm font-light text-white">{{ metrics.remaining_yes|floatformat:0 }} YES
+                        <span class="text-sm font-light text-white">{{ metrics.remaining_yes|floatformat:2 }} YES
                             Shares</span>
                     </div>
                     <div class="flex items-center gap-3 mt-2">
                         <div class="h-2 w-2 rounded-full bg-red-500"></div>
-                        <span class="text-sm font-light text-white">{{ metrics.remaining_no|floatformat:0 }} NO
+                        <span class="text-sm font-light text-white">{{ metrics.remaining_no|floatformat:2 }} NO
                             Shares</span>
                     </div>
                 </div>
@@ -56,16 +57,21 @@
             <div>
                 <h3 class="text-3xl font-thin tracking-tight">Outcome: YES</h3>
             </div>
-            <div class="h-10 w-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
-                <i data-lucide="check-circle-2" width="20"></i>
+            {% if resolved_side == "YES" %}
+            <div class="px-3 py-1 bg-black rounded-lg flex items-center justify-center">
+                <span class="text-[10px] font-light text-white tracking-widest uppercase">WIN!</span>
             </div>
+            {% endif %}
         </div>
 
         <div class="mb-6">
-            <span class="text-gray-400 uppercase tracking-widest text-[10px] font-light mb-1 block">Estimated PnL</span>
+            <span class="text-gray-400 uppercase tracking-widest text-[10px] font-light mb-1 block">Estimated ROI</span>
             <div
                 class="text-5xl md:text-6xl font-thin tracking-tighter {% if metrics.pnl_yes >= 0 %}text-black{% else %}text-red-500{% endif %}">
-                ${{ metrics.pnl_yes|floatformat:2 }}
+                {{ metrics.pnl_yes_pct|floatformat:1 }}%
+            </div>
+            <div class="text-sm font-light text-gray-400 mt-2">
+                ${{ metrics.pnl_yes|floatformat:2 }} absolute PnL
             </div>
         </div>
 
@@ -87,16 +93,21 @@
             <div>
                 <h3 class="text-3xl font-thin tracking-tight">Outcome: NO</h3>
             </div>
-            <div class="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center text-red-600">
-                <i data-lucide="x-circle" width="20"></i>
+            {% if resolved_side == "NO" %}
+            <div class="px-3 py-1 bg-black rounded-lg flex items-center justify-center">
+                <span class="text-[10px] font-light text-white tracking-widest uppercase">WIN!</span>
             </div>
+            {% endif %}
         </div>
 
         <div class="mb-6">
-            <span class="text-gray-400 uppercase tracking-widest text-[10px] font-light mb-1 block">Estimated PnL</span>
+            <span class="text-gray-400 uppercase tracking-widest text-[10px] font-light mb-1 block">Estimated ROI</span>
             <div
                 class="text-5xl md:text-6xl font-thin tracking-tighter {% if metrics.pnl_no >= 0 %}text-black{% else %}text-red-500{% endif %}">
-                ${{ metrics.pnl_no|floatformat:2 }}
+                {{ metrics.pnl_no_pct|floatformat:1 }}%
+            </div>
+            <div class="text-sm font-light text-gray-400 mt-2">
+                ${{ metrics.pnl_no|floatformat:2 }} absolute PnL
             </div>
         </div>
 
@@ -134,7 +145,7 @@
         <div class="bg-white rounded-[32px] p-8 border border-black flex flex-col justify-center">
             <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-6">YES Volume</h3>
             <div class="text-3xl font-thin text-black mb-1">
-                {{ metrics.yes_buy_sh|add:metrics.yes_sell_sh|floatformat:0 }}
+                {{ metrics.yes_buy_sh|add:metrics.yes_sell_sh|floatformat:2 }}
             </div>
             <div class="text-xs text-gray-400 font-mono font-light">SHARES TRADED</div>
         </div>
@@ -142,20 +153,20 @@
         <div class="bg-white rounded-[32px] p-8 border border-black flex flex-col justify-center">
             <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-6">NO Volume</h3>
             <div class="text-3xl font-thin text-black mb-1">
-                {{ metrics.no_buy_sh|add:metrics.no_sell_sh|floatformat:0 }}
+                {{ metrics.no_buy_sh|add:metrics.no_sell_sh|floatformat:2 }}
             </div>
             <div class="text-xs text-gray-400 font-mono font-light">SHARES TRADED</div>
         </div>
 
         <div class="bg-white rounded-[32px] p-8 border border-black flex flex-col justify-center">
             <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-6">Remaining YES</h3>
-            <div class="text-3xl font-thin text-black mb-1">{{ metrics.remaining_yes|floatformat:0 }}</div>
+            <div class="text-3xl font-thin text-black mb-1">{{ metrics.remaining_yes|floatformat:2 }}</div>
             <div class="text-xs text-gray-400 font-mono font-light">HELD AT CLOSE</div>
         </div>
 
         <div class="bg-white rounded-[32px] p-8 border border-black flex flex-col justify-center">
             <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-6">Remaining NO</h3>
-            <div class="text-3xl font-thin text-black mb-1">{{ metrics.remaining_no|floatformat:0 }}</div>
+            <div class="text-3xl font-thin text-black mb-1">{{ metrics.remaining_no|floatformat:2 }}</div>
             <div class="text-xs text-gray-400 font-mono font-light">HELD AT CLOSE</div>
         </div>
     </div>
