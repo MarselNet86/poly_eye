@@ -310,11 +310,15 @@
             else runningNoShares -= t.shares;
         }
 
+        const totalShares = runningYesShares + runningNoShares;
+        const imbalance = totalShares > 0 ? (Math.abs(runningYesShares - runningNoShares) / totalShares * 100).toFixed(1) : "0.0";
+
         exposureTimeline[t.jitteredTs] = {
             yes: runningYesShares,
             no: runningNoShares,
             yesVal: (runningYesShares * (t.side === 'Up' ? t.price : lastYesVal) / 100).toFixed(2),
-            noVal: (runningNoShares * (t.side === 'Down' ? t.price : lastNoVal) / 100).toFixed(2)
+            noVal: (runningNoShares * (t.side === 'Down' ? t.price : lastNoVal) / 100).toFixed(2),
+            imbalance: imbalance
         };
 
         if (t.side === 'Up') lastYesVal = t.price;
@@ -502,6 +506,12 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Share Imbalance Row -->
+                            <div class="pt-3 border-t border-black/5 flex justify-between items-center">
+                                <span class="text-[9px] text-gray-400 uppercase tracking-widest block font-light">Share Imbalance</span>
+                                <div class="text-base font-light text-black">${meta.exposure.imbalance}%</div>
                             </div>
 
                             <!-- EV Indicator Row -->
