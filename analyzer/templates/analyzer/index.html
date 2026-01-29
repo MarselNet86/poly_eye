@@ -45,11 +45,20 @@
         }
 
         .htmx-indicator {
-            display: none;
+            display: none !important;
         }
 
-        .htmx-request .htmx-indicator {
-            display: inline;
+        .htmx-request .htmx-indicator,
+        .htmx-indicator.htmx-request {
+            display: flex !important;
+        }
+
+        .htmx-request .search-default {
+            display: none !important;
+        }
+
+        [x-cloak] {
+            display: none !important;
         }
     </style>
 </head>
@@ -190,149 +199,161 @@
 
             <!-- Right Content Area -->
             <section class="lg:col-span-9">
-                <div class="bg-white rounded-[48px] p-8 md:p-12 min-h-[600px] border border-black relative">
-
-                    <!-- STEP 1: Search -->
-                    <div x-show="isActive(1)" x-transition.opacity.duration.500ms>
-                        <div class="mb-10">
-                            <h2
-                                class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
-                                Find Market
-                            </h2>
-                            <p class="mt-4 text-lg text-gray-500 font-light max-w-md">
-                                Search for the Polymarket event you wish to analyze.
-                            </p>
-                        </div>
-
-                        <form hx-get="{% url 'analyzer:search_market' %}" hx-target="#search-results"
-                            hx-trigger="submit" hx-indicator="#search-loading" class="flex gap-4 mb-12">
-                            <div class="w-full relative">
-                                <input type="text" name="q" placeholder="e.g. 'Bitcoin 2024' or 'Election'" required
-                                    class="w-full bg-transparent border border-black rounded-full px-6 py-4 text-black font-light placeholder-gray-400 focus:outline-none focus:bg-white transition-all">
-                            </div>
-                            <button type="submit"
-                                class="px-8 py-4 rounded-full font-light uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 bg-black text-white border border-black hover:bg-white hover:text-black whitespace-nowrap">
-                                <span
-                                    class="htmx-indicator w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
-                                    id="search-loading"></span>
-                                <span class="htmx-request:hidden">Search</span>
-                            </button>
-                        </form>
-
-                        <div id="search-results" class="space-y-4"></div>
-                    </div>
-
-                    <!-- STEP 2: Load Trades -->
-                    <div x-show="isActive(2)" x-transition.opacity.duration.500ms style="display: none;">
-                        <div class="mb-10">
-                            <h2
-                                class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
-                                Load Data
-                            </h2>
-                            <p class="mt-4 text-lg text-gray-500 font-light max-w-md">
-                                Import trade history for "<span x-text="marketTitle"></span>"
-                            </p>
-                        </div>
-
-                        <div x-data="{ method: 'api' }" class="w-full max-w-xl">
-                            <div class="flex bg-white rounded-full p-1 w-fit mb-8 border border-black">
-                                <button @click="method = 'api'"
-                                    class="px-6 py-2 rounded-full text-sm font-light uppercase tracking-wider transition-all"
-                                    :class="method === 'api' ? 'bg-black text-white' : 'text-gray-400 hover:text-black'">
-                                    API Fetch
-                                </button>
-                                <button @click="method = 'file'"
-                                    class="px-6 py-2 rounded-full text-sm font-light uppercase tracking-wider transition-all"
-                                    :class="method === 'file' ? 'bg-black text-white' : 'text-gray-400 hover:text-black'">
-                                    Upload JSON
-                                </button>
-                            </div>
-
-                            <div class="bg-white rounded-[32px] p-8 border border-black">
-                                <!-- API Form -->
-                                <form x-show="method === 'api'" hx-post="{% url 'analyzer:fetch_trades' %}"
-                                    hx-target="#trades-result" hx-indicator="#fetch-loading" class="space-y-6">
-                                    {% csrf_token %}
-                                    <div class="w-full">
-                                        <label
-                                            class="block text-xs font-light uppercase tracking-widest text-gray-500 mb-2 ml-4">Condition
-                                            ID</label>
-                                        <input type="text" name="condition_id" id="condition-id-input" required readonly
-                                            class="w-full bg-gray-50 border border-gray-200 rounded-full px-6 py-4 text-gray-500 font-light focus:outline-none">
-                                    </div>
-                                    <div class="w-full">
-                                        <label
-                                            class="block text-xs font-light uppercase tracking-widest text-gray-500 mb-2 ml-4">User
-                                            Address</label>
-                                        <input type="text" name="user_address" placeholder="0x..." required
-                                            class="w-full bg-transparent border border-black rounded-full px-6 py-4 text-black font-light placeholder-gray-400 focus:outline-none focus:bg-white transition-all">
-                                    </div>
-                                    <button type="submit"
-                                        class="w-full px-8 py-4 rounded-full font-light uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 bg-black text-white border border-black hover:bg-white hover:text-black">
-                                        <span
-                                            class="htmx-indicator w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
-                                            id="fetch-loading"></span>
-                                        <span class="htmx-request:hidden">Fetch Trades</span>
-                                    </button>
-                                </form>
-
-                                <!-- File Upload Form -->
-                                <form x-show="method === 'file'" hx-post="{% url 'analyzer:upload_trades' %}"
-                                    hx-encoding="multipart/form-data" hx-target="#trades-result"
-                                    hx-indicator="#upload-loading" class="space-y-6">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="market_title" :value="marketTitle">
-                                    <!-- If needed by backend -->
-
-                                    <div
-                                        class="relative w-full h-48 border border-dashed border-black rounded-3xl flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 transition-colors cursor-pointer group">
-                                        <i data-lucide="upload" class="mb-4 group-hover:text-black"></i>
-                                        <span class="uppercase text-xs font-bold tracking-widest">Select JSON
-                                            File</span>
-                                        <input type="file" name="file" accept=".json" required
-                                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                                    </div>
-
-                                    <button type="submit"
-                                        class="w-full px-8 py-4 rounded-full font-light uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 bg-black text-white border border-black hover:bg-white hover:text-black">
-                                        <span
-                                            class="htmx-indicator w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
-                                            id="upload-loading"></span>
-                                        <span class="htmx-request:hidden">Process File</span>
-                                    </button>
-                                </form>
-                            </div>
-
-                            <div id="trades-result" class="mt-4"></div>
-                        </div>
-                    </div>
-
-                    <!-- STEP 3: Analysis (formerly Step 4) -->
-                    <div x-show="isActive(3)" x-transition.opacity.duration.500ms style="display: none;">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-                            <div>
+                <div class="bg-white rounded-[48px] p-8 md:p-12 min-h-[700px] border border-black relative">
+                    <div class="relative w-full">
+                        <!-- STEP 1: Search -->
+                        <div x-show="isActive(1)" x-transition.opacity.duration.500ms class="absolute inset-0 w-full">
+                            <div class="mb-10">
                                 <h2
                                     class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
-                                    Performance
+                                    Find Market
                                 </h2>
+                                <p class="mt-4 text-lg text-gray-500 font-light max-w-md">
+                                    Search for the Polymarket event you wish to analyze.
+                                </p>
                             </div>
-                            <!-- Trigger analysis generation when entering Step 3 -->
-                            <button hx-get="{% url 'analyzer:generate_analysis' %}" hx-target="#analysis-result"
-                                hx-indicator="#analysis-loading" id="generate-btn" class="hidden">
-                                Generate
-                            </button>
+
+                            <form hx-get="{% url 'analyzer:search_market' %}" hx-target="#search-results"
+                                hx-trigger="submit" hx-indicator="this" class="flex gap-4 mb-12">
+                                <div class="w-full relative">
+                                    <input type="text" name="q" placeholder="e.g. 'Bitcoin 2024' or 'Election'" required
+                                        class="w-full bg-transparent border border-black rounded-full px-6 py-4 text-black font-light placeholder-gray-400 focus:outline-none focus:bg-white transition-all">
+                                </div>
+                                <button type="submit"
+                                    class="px-8 py-4 rounded-full font-light uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 bg-black text-white border border-black hover:opacity-90 whitespace-nowrap">
+                                    <span class="search-default">Search</span>
+                                    <span class="search-active htmx-indicator items-center gap-2">
+                                        <span
+                                            class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                        <span>Searching...</span>
+                                    </span>
+                                </button>
+                            </form>
+
+
+                            <div id="search-results" class="space-y-4"></div>
                         </div>
 
-                        <div id="analysis-result">
-                            <div id="analysis-loading"
-                                class="htmx-indicator w-full py-20 flex items-center justify-center">
-                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+                        <!-- STEP 2: Load Trades -->
+                        <div x-show="isActive(2)" x-transition.opacity.duration.500ms x-cloak
+                            class="absolute inset-0 w-full">
+                            <div class="mb-10">
+                                <h2
+                                    class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
+                                    Load Data
+                                </h2>
+                                <p class="mt-4 text-lg text-gray-500 font-light max-w-md">
+                                    Import trade history for "<span x-text="marketTitle"></span>"
+                                </p>
                             </div>
-                            <!-- Analysis Partial will load here -->
+
+                            <div x-data="{ method: 'api' }" class="w-full max-w-xl">
+                                <div class="flex bg-white rounded-full p-1 w-fit mb-8 border border-black">
+                                    <button @click="method = 'api'"
+                                        class="px-6 py-2 rounded-full text-sm font-light uppercase tracking-wider transition-all"
+                                        :class="method === 'api' ? 'bg-black text-white' : 'text-gray-400 hover:text-black'">
+                                        API Fetch
+                                    </button>
+                                    <button @click="method = 'file'"
+                                        class="px-6 py-2 rounded-full text-sm font-light uppercase tracking-wider transition-all"
+                                        :class="method === 'file' ? 'bg-black text-white' : 'text-gray-400 hover:text-black'">
+                                        Upload JSON
+                                    </button>
+                                </div>
+
+                                <div class="bg-white rounded-[32px] p-8 border border-black">
+                                    <!-- API Form -->
+                                    <form x-show="method === 'api'" hx-post="{% url 'analyzer:fetch_trades' %}"
+                                        hx-target="#trades-result" hx-indicator="this" class="space-y-6">
+                                        {% csrf_token %}
+                                        <div class="w-full">
+                                            <label
+                                                class="block text-xs font-light uppercase tracking-widest text-gray-500 mb-2 ml-4">Condition
+                                                ID</label>
+                                            <input type="text" name="condition_id" id="condition-id-input" required
+                                                readonly
+                                                class="w-full bg-gray-50 border border-gray-200 rounded-full px-6 py-4 text-gray-500 font-light focus:outline-none">
+                                        </div>
+                                        <div class="w-full">
+                                            <label
+                                                class="block text-xs font-light uppercase tracking-widest text-gray-500 mb-2 ml-4">User
+                                                Address</label>
+                                            <input type="text" name="user_address" placeholder="0x..." required
+                                                class="w-full bg-transparent border border-black rounded-full px-6 py-4 text-black font-light placeholder-gray-400 focus:outline-none focus:bg-white transition-all">
+                                        </div>
+                                        <button type="submit"
+                                            class="w-full px-8 py-4 rounded-full font-light uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 bg-black text-white border border-black hover:opacity-90">
+                                            <span class="search-default">Fetch Trades</span>
+                                            <span class="search-active htmx-indicator items-center gap-2">
+                                                <span
+                                                    class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                                <span>Fetching...</span>
+                                            </span>
+                                        </button>
+                                    </form>
+
+                                    <!-- File Upload Form -->
+                                    <form x-show="method === 'file'" hx-post="{% url 'analyzer:upload_trades' %}"
+                                        hx-encoding="multipart/form-data" hx-target="#trades-result" hx-indicator="this"
+                                        class="space-y-6">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="market_title" :value="marketTitle">
+                                        <!-- If needed by backend -->
+
+                                        <div
+                                            class="relative w-full h-48 border border-dashed border-black rounded-3xl flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 transition-colors cursor-pointer group">
+                                            <i data-lucide="upload" class="mb-4 group-hover:text-black"></i>
+                                            <span class="uppercase text-xs font-bold tracking-widest">Select JSON
+                                                File</span>
+                                            <input type="file" name="file" accept=".json" required
+                                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                        </div>
+
+                                        <button type="submit"
+                                            class="w-full px-8 py-4 rounded-full font-light uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 bg-black text-white border border-black hover:opacity-90">
+                                            <span class="search-default">Process File</span>
+                                            <span class="search-active htmx-indicator items-center gap-2">
+                                                <span
+                                                    class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                                <span>Processing...</span>
+                                            </span>
+                                        </button>
+                                    </form>
+                                </div>
+
+
+                                <div id="trades-result" class="mt-4"></div>
+                            </div>
                         </div>
+
+                        <!-- STEP 3: Analysis (formerly Step 4) -->
+                        <div x-show="isActive(3)" x-transition.opacity.duration.500ms x-cloak
+                            class="absolute inset-0 w-full">
+                            <div
+                                class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+                                <div>
+                                    <h2
+                                        class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
+                                        Performance
+                                    </h2>
+                                </div>
+                                <!-- Trigger analysis generation when entering Step 3 -->
+                                <button hx-get="{% url 'analyzer:generate_analysis' %}" hx-target="#analysis-result"
+                                    hx-indicator="#analysis-loading" id="generate-btn" class="hidden">
+                                    Generate
+                                </button>
+                            </div>
+
+                            <div id="analysis-result">
+                                <div id="analysis-loading"
+                                    class="htmx-indicator w-full py-20 flex items-center justify-center hidden">
+                                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+                                </div>
+                                <!-- Analysis Partial will load here -->
+                            </div>
+                        </div>
+
                     </div>
-
-                </div>
             </section>
         </div>
     </main>
