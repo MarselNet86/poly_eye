@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}PolyEYE - Market{% endblock %}
+
+{% block content %}
+<main class="max-w-[1600px] mx-auto px-4 md:px-8 mt-8 pb-20">
+    <div class="bg-white rounded-[48px] p-8 md:p-12 min-h-[700px] border border-black">
+        <div class="mb-10">
+            <h2 class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
+                Market Analysis
+            </h2>
+            <p class="mt-4 text-lg text-gray-500 font-light max-w-2xl">
+                Explore real-time market trends, price movements, and trading opportunities on Polymarket.
+            </p>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+            <!-- Card 1: Top Markets -->
+            <div
+                class="bg-[#F5F5F7] rounded-[32px] p-6 border border-transparent hover:border-black transition-all duration-300">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black">
+                        <i data-lucide="trending-up" width="20" class="stroke-current"></i>
+                    </div>
+                    <h3 class="text-xl font-light uppercase tracking-wide">Top Markets</h3>
+                </div>
+                <p class="text-sm text-gray-500 font-light">
+                    View the most active and trending prediction markets.
+                </p>
+            </div>
+
+            <!-- Card 2: Price Charts -->
+            <div
+                class="bg-[#F5F5F7] rounded-[32px] p-6 border border-transparent hover:border-black transition-all duration-300">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black">
+                        <i data-lucide="activity" width="20" class="stroke-current"></i>
+                    </div>
+                    <h3 class="text-xl font-light uppercase tracking-wide">Price Charts</h3>
+                </div>
+                <p class="text-sm text-gray-500 font-light">
+                    Analyze historical price movements and patterns.
+                </p>
+            </div>
+
+            <!-- Card 3: Volume Data -->
+            <div
+                class="bg-[#F5F5F7] rounded-[32px] p-6 border border-transparent hover:border-black transition-all duration-300">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black">
+                        <i data-lucide="bar-chart-2" width="20" class="stroke-current"></i>
+                    </div>
+                    <h3 class="text-xl font-light uppercase tracking-wide">Volume Data</h3>
+                </div>
+                <p class="text-sm text-gray-500 font-light">
+                    Track trading volume across different markets.
+                </p>
+            </div>
+        </div>
+
+        <!-- Coming Soon Banner -->
+        <div class="mt-16 text-center py-12">
+            <div class="inline-block bg-black text-white px-8 py-4 rounded-full">
+                <span class="text-sm font-light uppercase tracking-widest">Coming Soon</span>
+            </div>
+            <p class="mt-6 text-gray-400 font-light">
+                Market analysis features are under development
+            </p>
+        </div>
+    </div>
+</main>
+{% endblock %}

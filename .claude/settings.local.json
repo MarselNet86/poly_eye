@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash([ -f ./market/urls.py ])",
+      "Bash(find:*)",
+      "Bash(.venv/Scripts/python manage.py check:*)"
+    ]
+  }
+}

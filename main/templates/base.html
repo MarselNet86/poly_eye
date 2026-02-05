@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PolyEYE{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Helvetica Neue', 'Arial', 'sans-serif'],
+                        mono: ['Courier New', 'Courier', 'monospace'],
+                    },
+                    colors: {
+                        hublot: {
+                            orange: '#FF5722',
+                            dark: '#1A1A1A',
+                            light: '#F5F5F7',
+                            card: '#FFFFFF',
+                            border: '#E5E5E5'
+                        }
+                    },
+                    borderRadius: {
+                        '4xl': '2.5rem',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- HTMX & Alpine.js -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    {% block extra_head %}{% endblock %}
+
+    <style>
+        body {
+            background-color: #F5F5F7;
+            color: #1A1A1A;
+        }
+
+        .htmx-indicator {
+            display: none !important;
+        }
+
+        .htmx-request .htmx-indicator,
+        .htmx-indicator.htmx-request {
+            display: flex !important;
+        }
+
+        .htmx-request .search-default {
+            display: none !important;
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
+
+        .grid-stack {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: auto;
+        }
+
+        .grid-cell {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+            {
+            % block extra_styles %
+        }
+
+            {
+            % endblock %
+        }
+    </style>
+</head>
+
+<body class="min-h-screen selection:bg-black selection:text-white">
+
+    <div x-data="{ 
+        sidebarOpen: localStorage.getItem('sidebarOpen') !== 'false',
+        toggleSidebar() { 
+            this.sidebarOpen = !this.sidebarOpen; 
+            localStorage.setItem('sidebarOpen', this.sidebarOpen);
+        }
+    }" class="flex h-screen bg-[#F5F5F7]">
+
+        <!-- Sidebar -->
+        <aside
+            class="hidden lg:flex flex-col bg-white border-r border-black/5 transition-all duration-300 ease-in-out h-full"
+            :class="sidebarOpen ? 'w-64' : 'w-20'">
+
+            <!-- Logo Section -->
+            <div class="h-16 flex items-center px-4 border-b border-transparent transition-all duration-300"
+                :class="sidebarOpen ? 'justify-start' : 'justify-center'">
+                <div class="flex items-center transition-all duration-300" :class="sidebarOpen ? 'gap-3' : 'gap-0'">
+                    <div class="w-10 h-10 flex-shrink-0 bg-black rounded-xl flex items-center justify-center cursor-pointer"
+                        @click="toggleSidebar()">
+                        <!-- Logo Icon -->
+                        <div class="w-5 h-5 border-2 border-white rounded-md relative">
+                            <div class="absolute inset-0.5 bg-white rounded-[1px] opacity-20"></div>
+                        </div>
+                    </div>
+                    <span x-show="sidebarOpen" x-cloak
+                        class="text-xl font-bold tracking-tight text-black whitespace-nowrap overflow-hidden transition-all duration-300"
+                        x-transition:enter="transition ease-out duration-200 delay-100"
+                        x-transition:enter-start="opacity-0 translate-x-[-10px]"
+                        x-transition:enter-end="opacity-100 translate-x-0"
+                        x-transition:leave="transition ease-in duration-100"
+                        x-transition:leave-start="opacity-100 translate-x-0"
+                        x-transition:leave-end="opacity-0 translate-x-[-10px]">
+                        POLYEYE
+                    </span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex-1 flex flex-col gap-2 p-3">
+
+                <!-- Proxy Wallet -->
+                <a href="{% url 'proxy_wallet:index' %}"
+                    class="group flex items-center px-3 py-3 rounded-xl transition-all duration-200 overflow-hidden whitespace-nowrap relative"
+                    :class="{% if request.resolver_match.app_name == 'proxy_wallet' %}'bg-gray-100 text-black'{% else %}'text-gray-600 hover:bg-gray-50 hover:text-black'{% endif %} + (sidebarOpen ? ' gap-3 justify-start' : ' gap-0 justify-center')">
+
+                    <i data-lucide="wallet" width="20" class="flex-shrink-0 transition-colors duration-200"></i>
+
+                    <span x-show="sidebarOpen" x-cloak class="text-sm font-medium whitespace-nowrap"
+                        x-transition:enter="transition ease-out duration-200 delay-100"
+                        x-transition:enter-start="opacity-0 translate-x-[-10px]"
+                        x-transition:enter-end="opacity-100 translate-x-0">
+                        Proxy Wallet
+                    </span>
+
+                    <!-- Tooltip for collapsed state -->
+                    <div x-show="!sidebarOpen" x-cloak
+                        class="absolute left-full ml-4 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                        Proxy Wallet
+                    </div>
+                </a>
+
+                <!-- Market -->
+                <a href="{% url 'market:index' %}"
+                    class="group flex items-center px-3 py-3 rounded-xl transition-all duration-200 overflow-hidden whitespace-nowrap relative"
+                    :class="{% if request.resolver_match.app_name == 'market' %}'bg-gray-100 text-black'{% else %}'text-gray-600 hover:bg-gray-50 hover:text-black'{% endif %} + (sidebarOpen ? ' gap-3 justify-start' : ' gap-0 justify-center')">
+
+                    <i data-lucide="trending-up" width="20" class="flex-shrink-0 transition-colors duration-200"></i>
+
+                    <span x-show="sidebarOpen" x-cloak class="text-sm font-medium whitespace-nowrap"
+                        x-transition:enter="transition ease-out duration-200 delay-100"
+                        x-transition:enter-start="opacity-0 translate-x-[-10px]"
+                        x-transition:enter-end="opacity-100 translate-x-0">
+                        Market
+                    </span>
+
+                    <!-- Tooltip for collapsed state -->
+                    <div x-show="!sidebarOpen" x-cloak
+                        class="absolute left-full ml-4 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                        Market
+                    </div>
+                </a>
+
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="p-3 border-t border-black/5 flex flex-col gap-2">
+
+                <!-- Collapse Trigger -->
+                <button @click="toggleSidebar()"
+                    class="group flex items-center px-3 py-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-xl transition-colors overflow-hidden whitespace-nowrap relative"
+                    :class="sidebarOpen ? 'gap-3 justify-start' : 'gap-0 justify-center'">
+
+                    <i data-lucide="chevron-left" width="20" class="flex-shrink-0 transition-colors"
+                        x-show="sidebarOpen"></i>
+                    <i data-lucide="chevron-right" width="20" class="flex-shrink-0 transition-colors"
+                        x-show="!sidebarOpen" x-cloak></i>
+
+                    <span x-show="sidebarOpen" x-cloak class="text-sm font-medium whitespace-nowrap"
+                        x-transition:enter="transition ease-out duration-200 delay-100"
+                        x-transition:enter-start="opacity-0 translate-x-[-10px]"
+                        x-transition:enter-end="opacity-100 translate-x-0">
+                        Collapse
+                    </span>
+
+                    <div x-show="!sidebarOpen" x-cloak
+                        class="absolute left-full ml-4 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                        Expand
+                    </div>
+                </button>
+
+                <!-- User Profile -->
+                <div class="group flex items-center px-3 py-3 rounded-xl transition-all duration-200 overflow-hidden whitespace-nowrap relative"
+                    :class="sidebarOpen ? 'gap-3 justify-start' : 'gap-0 justify-center'">
+                    <div
+                        class="w-8 h-8 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
+                        <span class="text-[10px] font-bold text-gray-500">xD</span>
+                    </div>
+
+                    <div x-show="sidebarOpen" x-cloak class="flex flex-col"
+                        x-transition:enter="transition ease-out duration-200 delay-100"
+                        x-transition:enter-start="opacity-0 translate-x-[-10px]"
+                        x-transition:enter-end="opacity-100 translate-x-0">
+                        <span class="text-sm font-medium text-black truncate w-32">User</span>
+                        <span class="text-xs text-gray-400 truncate w-32">user@polyeye.com</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+
+            <!-- Mobile Toggle Header (visible only on mobile) -->
+            <div class="lg:hidden h-16 bg-white border-b border-black/5 flex items-center justify-between px-4 sm:px-6">
+                <div class="font-bold text-lg tracking-tight">POLYEYE</div>
+                <!-- Not implementing full mobile drawer logic right now as requested focus is desktop sidebar, 
+                     but keeping structure for mobile view compatibility -->
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto bg-[#F5F5F7] p-6 lg:p-8">
+                <!-- Collapse Trigger for when sidebar is hidden/collapsed? No, the sidebar is always visible just collapsed width. -->
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Mobile Navigation (Bottom Bar) - Keeping for mobile users -->
+    <nav
+        class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-black/10 z-40 flex justify-around py-4 pb-safe">
+        <a href="{% url 'proxy_wallet:index' %}"
+            class="flex flex-col items-center gap-1 transition-colors {% if request.resolver_match.app_name == 'proxy_wallet' %}text-black{% else %}text-gray-400{% endif %}">
+            <i data-lucide="wallet" width="24" class="stroke-current"></i>
+            <span class="text-[10px] uppercase tracking-wider">Wallet</span>
+        </a>
+
+        <a href="{% url 'market:index' %}"
+            class="flex flex-col items-center gap-1 transition-colors {% if request.resolver_match.app_name == 'market' %}text-black{% else %}text-gray-400{% endif %}">
+            <i data-lucide="trending-up" width="24" class="stroke-current"></i>
+            <span class="text-[10px] uppercase tracking-wider">Market</span>
+        </a>
+    </nav>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        document.body.addEventListener('htmx:afterSwap', function (evt) {
+            // Re-run icons for new content
+            lucide.createIcons();
+        });
+
+        {% block extra_scripts %} {% endblock %}
+    </script>
+</body>
+
+</html>
