@@ -129,9 +129,9 @@
     <!-- Chart Card -->
     <div class="bg-white rounded-[32px] p-8 border border-black h-[400px] flex flex-col">
         <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-6">Position Analysis</h3>
-        <a href="{% url 'analyzer:view_chart' %}" target="_blank"
+        <a href="{% url 'proxy_wallet:view_chart' %}" target="_blank"
             class="flex-1 w-full h-full flex items-center justify-center bg-gray-50 rounded-2xl overflow-hidden relative group/chart">
-            <img src="{% url 'analyzer:view_chart' %}" alt="Trade Analysis Chart"
+            <img src="{% url 'proxy_wallet:view_chart' %}" alt="Trade Analysis Chart"
                 class="w-full h-full object-cover opacity-90 mix-blend-multiply transition-transform duration-500 group-hover/chart:scale-110">
             <div
                 class="absolute inset-0 bg-black/0 group-hover/chart:bg-black/5 transition-colors flex items-center justify-center opacity-0 group-hover/chart:opacity-100">
@@ -173,7 +173,7 @@
 </div>
 
 <div class="flex justify-center">
-    <a href="{% url 'analyzer:download_report' %}" download class="no-underline">
+    <a href="{% url 'proxy_wallet:download_report' %}" download class="no-underline">
         <button
             class="px-8 py-4 rounded-full font-light uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 bg-white text-black border border-black hover:bg-black hover:text-white">
             <i data-lucide="download" width="18"></i>

@@ -27,7 +27,7 @@ PRICE_RESOLUTION_THRESHOLD = 0.5
 
 def index(request):
     """Главная страница"""
-    return render(request, 'analyzer/index.html')
+    return render(request, 'proxy_wallet/index.html')
 
 
 @require_http_methods(["GET"])
@@ -58,7 +58,7 @@ def search_market(request):
                 'condition_id': market.get('conditionId', '')
             })
     
-    return render(request, 'analyzer/partials/market_results.html', {'results': results})
+    return render(request, 'proxy_wallet/partials/market_results.html', {'results': results})
 
 
 @require_http_methods(["POST"])
@@ -117,7 +117,7 @@ def fetch_trades(request):
     if inferred:
         request.session['resolved_side'] = inferred
 
-    return render(request, 'analyzer/partials/trades_loaded.html', {
+    return render(request, 'proxy_wallet/partials/trades_loaded.html', {
         'trade_count': len(all_trades),
         'market_title': request.session['market_title']
     })
@@ -153,7 +153,7 @@ def upload_trades(request):
     if inferred:
         request.session['resolved_side'] = inferred
 
-    return render(request, 'analyzer/partials/trades_loaded.html', {
+    return render(request, 'proxy_wallet/partials/trades_loaded.html', {
         'trade_count': len(raw_data),
         'market_title': request.session['market_title']
     })
@@ -178,7 +178,7 @@ def set_resolved_side(request):
         price = float(latest.get("price", 0))
         outcome = latest.get("outcome", "")
         
-        return render(request, 'analyzer/partials/resolved_set.html', {
+        return render(request, 'proxy_wallet/partials/resolved_set.html', {
             'resolved_side': inferred,
             'auto_inferred': True,
             'price': price,
@@ -187,7 +187,7 @@ def set_resolved_side(request):
     
     elif resolved_side in {'YES', 'NO'}:
         request.session['resolved_side'] = resolved_side
-        return render(request, 'analyzer/partials/resolved_set.html', {
+        return render(request, 'proxy_wallet/partials/resolved_set.html', {
             'resolved_side': resolved_side,
             'auto_inferred': False
         })
@@ -233,7 +233,7 @@ def generate_analysis(request):
     report_content = generate_text_report(market_title, resolved_side, parsed, metrics)
     request.session['report_content'] = report_content
     
-    return render(request, 'analyzer/partials/analysis_complete.html', {
+    return render(request, 'proxy_wallet/partials/analysis_complete.html', {
         'metrics': metrics,
         'market_title': market_title,
         'resolved_side': resolved_side,

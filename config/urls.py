@@ -4,5 +4,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('analyzer/', include('analyzer.urls')),
+    path('proxy-wallet/', include('proxy_wallet.urls')),
 ]

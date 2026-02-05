@@ -223,7 +223,7 @@
                             </p>
                         </div>
 
-                        <form hx-get="{% url 'analyzer:search_market' %}" hx-target="#search-results"
+                        <form hx-get="{% url 'proxy_wallet:search_market' %}" hx-target="#search-results"
                             hx-trigger="submit" hx-indicator="this" class="flex gap-4 mb-12">
                             <div class="w-full relative">
                                 <input type="text" name="q" placeholder="e.g. 'Bitcoin 2024' or 'Election'" required
@@ -272,7 +272,7 @@
 
                             <div class="bg-white rounded-[32px] p-8 border border-black">
                                 <!-- API Form -->
-                                <form x-show="method === 'api'" hx-post="{% url 'analyzer:fetch_trades' %}"
+                                <form x-show="method === 'api'" hx-post="{% url 'proxy_wallet:fetch_trades' %}"
                                     hx-target="#trades-result" hx-indicator="this" class="space-y-6">
                                     {% csrf_token %}
                                     <div class="w-full">
@@ -301,7 +301,7 @@
                                 </form>
 
                                 <!-- File Upload Form -->
-                                <form x-show="method === 'file'" hx-post="{% url 'analyzer:upload_trades' %}"
+                                <form x-show="method === 'file'" hx-post="{% url 'proxy_wallet:upload_trades' %}"
                                     hx-encoding="multipart/form-data" hx-target="#trades-result" hx-indicator="this"
                                     class="space-y-6">
                                     {% csrf_token %}
@@ -344,7 +344,7 @@
                                 </h2>
                             </div>
                             <!-- Trigger analysis generation when entering Step 3 -->
-                            <button hx-get="{% url 'analyzer:generate_analysis' %}" hx-target="#analysis-result"
+                            <button hx-get="{% url 'proxy_wallet:generate_analysis' %}" hx-target="#analysis-result"
                                 hx-indicator="#analysis-loading" id="generate-btn" class="hidden">
                                 Generate
                             </button>

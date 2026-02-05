@@ -34,7 +34,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'analyzer',
+    'proxy_wallet',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
