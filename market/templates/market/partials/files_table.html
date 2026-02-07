@@ -13,8 +13,7 @@
             {% for market in page_obj %}
             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
                 <td class="py-4 px-4">
-                    <a href="{% url 'market:file_detail' market.slug %}"
-                       class="text-black font-light hover:underline">
+                    <a href="{% url 'market:file_detail' market.slug %}" class="text-black font-light hover:underline">
                         {{ market.slug }}
                     </a>
                 </td>
@@ -27,17 +26,15 @@
                     </span>
                 </td>
                 <td class="py-4 px-4 text-right">
-                    <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <a href="{% url 'market:file_detail' market.slug %}"
-                           class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400
-                                  hover:bg-gray-100 hover:text-black transition-colors"
-                           title="View Details">
+                    <div class="flex items-center justify-end gap-2">
+                        <a href="{% url 'market:file_detail' market.slug %}" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400
+                                  hover:bg-gray-100 hover:text-black transition-colors" title="View Details">
                             <i data-lucide="eye" class="w-4 h-4"></i>
                         </a>
-                        <button @click="confirmDelete('{{ market.slug }}', {{ market.tick_count|default:0 }}, '{% url 'market:file_delete' market.slug %}')"
-                                class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400
-                                       hover:bg-red-50 hover:text-red-500 transition-colors"
-                                title="Delete">
+                        <button
+                            @click="$dispatch('open-delete-modal', { slug: '{{ market.slug }}', tickCount: {{ market.tick_count|default:0 }}, url: '{% url 'market:file_delete' market.slug %}' })"
+                            class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400
+                                       hover:bg-red-50 hover:text-red-500 transition-colors" title="Delete">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -56,8 +53,7 @@
     </p>
     <div class="flex gap-2">
         {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&sort={{ sort }}&order={{ order }}"
-           class="w-10 h-10 rounded-full border border-black flex items-center justify-center
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&sort={{ sort }}&order={{ order }}" class="w-10 h-10 rounded-full border border-black flex items-center justify-center
                   hover:bg-black hover:text-white transition-colors">
             <i data-lucide="chevron-left" class="w-4 h-4"></i>
         </a>
@@ -68,8 +64,7 @@
         </span>
 
         {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&sort={{ sort }}&order={{ order }}"
-           class="w-10 h-10 rounded-full border border-black flex items-center justify-center
+        <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&sort={{ sort }}&order={{ order }}" class="w-10 h-10 rounded-full border border-black flex items-center justify-center
                   hover:bg-black hover:text-white transition-colors">
             <i data-lucide="chevron-right" class="w-4 h-4"></i>
         </a>
@@ -87,13 +82,12 @@
     <h3 class="text-lg font-light uppercase tracking-wider text-gray-400 mb-2">No Files Found</h3>
     <p class="text-sm text-gray-400 mb-6">
         {% if search %}
-            No results for "{{ search }}"
+        No results for "{{ search }}"
         {% else %}
-            Upload market data to get started
+        Upload market data to get started
         {% endif %}
     </p>
-    <a href="{% url 'market:index' %}"
-       class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black text-white
+    <a href="{% url 'market:index' %}" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black text-white
               font-light uppercase tracking-wider text-sm hover:opacity-90 transition-colors">
         <i data-lucide="upload" class="w-4 h-4"></i>
         Upload Data
