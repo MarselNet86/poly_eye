@@ -5,4 +5,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('proxy-wallet/', include('proxy_wallet.urls')),
+    path('market/', include('market.urls')),
 ]

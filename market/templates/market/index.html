@@ -1,73 +1,210 @@
-{% extends 'base.html' %}
+{% extends 'main/base.html' %}
 
-{% block title %}PolyEYE - Market{% endblock %}
+{% block title %}PolyEYE - Market Data{% endblock %}
 
 {% block content %}
-<main class="max-w-[1600px] mx-auto px-4 md:px-8 mt-8 pb-20">
-    <div class="bg-white rounded-[48px] p-8 md:p-12 min-h-[700px] border border-black">
-        <div class="mb-10">
-            <h2 class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
-                Market Analysis
-            </h2>
-            <p class="mt-4 text-lg text-gray-500 font-light max-w-2xl">
-                Explore real-time market trends, price movements, and trading opportunities on Polymarket.
-            </p>
-        </div>
+<div x-data="fileUploader" data-upload-url="{% url 'market:upload_csv' %}" data-csrf-token="{{ csrf_token }}">
 
-        <!-- Feature Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-            <!-- Card 1: Top Markets -->
-            <div
-                class="bg-[#F5F5F7] rounded-[32px] p-6 border border-transparent hover:border-black transition-all duration-300">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black">
-                        <i data-lucide="trending-up" width="20" class="stroke-current"></i>
-                    </div>
-                    <h3 class="text-xl font-light uppercase tracking-wide">Top Markets</h3>
-                </div>
-                <p class="text-sm text-gray-500 font-light">
-                    View the most active and trending prediction markets.
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-[48px] p-8 md:p-12 min-h-[600px] border border-black">
+
+            <!-- Header -->
+            <div class="mb-10">
+                <h2 class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
+                    Upload Data
+                </h2>
+                <p class="mt-4 text-lg text-gray-500 font-light max-w-md">
+                    Upload CSV files with market data from Polymarket
                 </p>
             </div>
 
-            <!-- Card 2: Price Charts -->
-            <div
-                class="bg-[#F5F5F7] rounded-[32px] p-6 border border-transparent hover:border-black transition-all duration-300">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black">
-                        <i data-lucide="activity" width="20" class="stroke-current"></i>
+            <!-- Drop Zone -->
+            <div @dragover.prevent="isDragging = true" @dragleave.prevent="isDragging = false"
+                @drop.prevent="handleDrop($event)"
+                class="relative w-full min-h-[200px] border-2 border-dashed rounded-[32px] flex flex-col items-center justify-center transition-all duration-300 cursor-pointer group"
+                :class="isDragging ? 'border-black bg-gray-50 scale-[1.02]' : 'border-gray-300 hover:border-black hover:bg-gray-50'"
+                @click="$refs.fileInput.click()">
+
+                <input type="file" x-ref="fileInput" @change="handleFileSelect($event)" accept=".csv" multiple
+                    class="hidden">
+
+                <div class="text-center p-8">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center transition-colors"
+                        :class="isDragging ? 'bg-black text-white' : 'group-hover:bg-black group-hover:text-white'">
+                        <i data-lucide="upload" class="w-8 h-8"></i>
                     </div>
-                    <h3 class="text-xl font-light uppercase tracking-wide">Price Charts</h3>
+                    <p class="text-sm font-light uppercase tracking-widest text-gray-500 mb-2">
+                        Drop CSV files here
+                    </p>
+                    <p class="text-xs text-gray-400">
+                        or click to browse
+                    </p>
                 </div>
-                <p class="text-sm text-gray-500 font-light">
-                    Analyze historical price movements and patterns.
-                </p>
             </div>
 
-            <!-- Card 3: Volume Data -->
-            <div
-                class="bg-[#F5F5F7] rounded-[32px] p-6 border border-transparent hover:border-black transition-all duration-300">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black">
-                        <i data-lucide="bar-chart-2" width="20" class="stroke-current"></i>
+            <!-- Selected Files List -->
+            <template x-if="files.length > 0">
+                <div class="mt-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-light uppercase tracking-widest text-gray-500">
+                            Selected Files (<span x-text="files.length"></span>)
+                        </h3>
+                        <button @click="files = []"
+                            class="text-xs text-gray-400 hover:text-black transition-colors uppercase tracking-wider">
+                            Clear All
+                        </button>
                     </div>
-                    <h3 class="text-xl font-light uppercase tracking-wide">Volume Data</h3>
-                </div>
-                <p class="text-sm text-gray-500 font-light">
-                    Track trading volume across different markets.
-                </p>
-            </div>
-        </div>
 
-        <!-- Coming Soon Banner -->
-        <div class="mt-16 text-center py-12">
-            <div class="inline-block bg-black text-white px-8 py-4 rounded-full">
-                <span class="text-sm font-light uppercase tracking-widest">Coming Soon</span>
-            </div>
-            <p class="mt-6 text-gray-400 font-light">
-                Market analysis features are under development
-            </p>
+                    <div class="space-y-2">
+                        <template x-for="(file, index) in files" :key="file.name">
+                            <div class="flex items-center justify-between bg-gray-50 rounded-2xl px-6 py-4 group">
+                                <div class="flex items-center gap-4">
+                                    <div
+                                        class="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
+                                        <i data-lucide="file-text" class="w-5 h-5 text-gray-400"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-light text-black" x-text="file.name"></p>
+                                        <p class="text-xs text-gray-400" x-text="formatSize(file.size)"></p>
+                                    </div>
+                                </div>
+                                <button @click.stop="removeFile(index)"
+                                    class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <template x-if="isUploading">
+                        <div class="mt-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-light uppercase tracking-widest text-gray-500">Uploading...</span>
+                                <span class="text-xs text-gray-400" x-text="uploadProgress + '%'"></span>
+                            </div>
+                            <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-black rounded-full transition-all duration-300"
+                                    :style="'width: ' + uploadProgress + '%'">
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Upload Button -->
+                    <button @click="uploadFiles()" :disabled="isUploading || files.length === 0"
+                        class="mt-6 w-full px-8 py-4 rounded-full font-light uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 bg-black text-white border border-black hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <template x-if="!isUploading">
+                            <span class="flex items-center gap-2">
+                                <i data-lucide="upload" class="w-4 h-4"></i>
+                                <span>Upload <span x-text="files.length"></span> File<span
+                                        x-show="files.length > 1">s</span></span>
+                            </span>
+                        </template>
+                        <template x-if="isUploading">
+                            <span class="flex items-center gap-2">
+                                <span
+                                    class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                <span>Processing...</span>
+                            </span>
+                        </template>
+                    </button>
+                </div>
+            </template>
+
+            <!-- Upload Result -->
+            <div id="upload-result" class="mt-8"></div>
+
         </div>
     </div>
-</main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+document.addEventListener('alpine:init', () => {
+    Alpine.data('fileUploader', () => ({
+        files: [],
+        isDragging: false,
+        uploadProgress: 0,
+        isUploading: false,
+        uploadUrl: '',
+        csrfToken: '',
+
+        init() {
+            this.uploadUrl = this.$el.dataset.uploadUrl;
+            this.csrfToken = this.$el.dataset.csrfToken;
+        },
+
+        handleDrop(e) {
+            this.isDragging = false;
+            const droppedFiles = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.csv'));
+            this.addFiles(droppedFiles);
+        },
+
+        handleFileSelect(e) {
+            const selectedFiles = Array.from(e.target.files);
+            this.addFiles(selectedFiles);
+            e.target.value = '';
+        },
+
+        addFiles(newFiles) {
+            newFiles.forEach(file => {
+                if (!this.files.find(f => f.name === file.name)) {
+                    this.files.push(file);
+                }
+            });
+        },
+
+        removeFile(index) {
+            this.files.splice(index, 1);
+        },
+
+        formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        },
+
+        uploadFiles() {
+            if (this.files.length === 0) return;
+
+            this.isUploading = true;
+            this.uploadProgress = 0;
+
+            const formData = new FormData();
+            this.files.forEach(file => {
+                formData.append('files', file);
+            });
+
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    this.uploadProgress = Math.round((e.loaded / e.total) * 100);
+                }
+            });
+
+            xhr.onload = () => {
+                this.isUploading = false;
+                if (xhr.status === 200) {
+                    document.getElementById('upload-result').innerHTML = xhr.responseText;
+                    this.files = [];
+                    this.uploadProgress = 0;
+                } else {
+                    document.getElementById('upload-result').innerHTML = '<div class="text-red-500 p-4">Upload failed: ' + xhr.status + '</div>';
+                }
+                lucide.createIcons();
+            };
+
+            xhr.onerror = () => {
+                this.isUploading = false;
+                document.getElementById('upload-result').innerHTML = '<div class="text-red-500 p-4">Upload failed</div>';
+            };
+
+            xhr.open('POST', this.uploadUrl);
+            xhr.setRequestHeader('X-CSRFToken', this.csrfToken);
+            xhr.send(formData);
+        }
+    }));
+});
 {% endblock %}

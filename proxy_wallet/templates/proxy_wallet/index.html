@@ -1,84 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'main/base.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyEYE Analyzer</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Helvetica Neue', 'Arial', 'sans-serif'],
-                        mono: ['Courier New', 'Courier', 'monospace'],
-                    },
-                    colors: {
-                        hublot: {
-                            orange: '#FF5722',
-                            dark: '#1A1A1A',
-                            light: '#F5F5F7',
-                            card: '#FFFFFF',
-                            border: '#E5E5E5'
-                        }
-                    },
-                    borderRadius: {
-                        '4xl': '2.5rem',
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- HTMX & Alpine.js -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Icons & Charts -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+{% block title %}PolyEYE - Proxy Wallet{% endblock %}
 
-    <style>
-        body {
-            background-color: #F5F5F7;
-            color: #1A1A1A;
-        }
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+{% endblock %}
 
-        .htmx-indicator {
-            display: none !important;
-        }
-
-        .htmx-request .htmx-indicator,
-        .htmx-indicator.htmx-request {
-            display: flex !important;
-        }
-
-        .htmx-request .search-default {
-            display: none !important;
-        }
-
-        [x-cloak] {
-            display: none !important;
-        }
-
-        .grid-stack {
-            display: grid;
-            grid-template-columns: 1fr;
-            grid-template-rows: auto;
-        }
-
-        .grid-cell {
-            grid-column: 1;
-            grid-row: 1;
-        }
-    </style>
-</head>
-
-<body class="min-h-screen pb-20 selection:bg-black selection:text-white" x-data="{
+{% block content %}
+<div x-data="{
         currentStep: 1,
         completedSteps: [1],
         marketTitle: 'Market',
-        
+
         init() {
             window.addEventListener('market-selected', (e) => {
                 this.marketSelected(e.detail.title);
@@ -87,25 +20,25 @@
                 this.tradesLoaded();
             });
         },
-        
+
         isActive(step) {
             return this.currentStep === step;
         },
-        
+
         isCompleted(step) {
             return this.completedSteps.includes(step);
         },
-        
+
         canNav(step) {
             return this.isCompleted(step) || this.currentStep === step || step < this.currentStep;
         },
-        
+
         setStep(step) {
             if (this.canNav(step)) {
                 this.currentStep = step;
             }
         },
-        
+
         completeStep(step) {
             if (!this.completedSteps.includes(step)) {
                 this.completedSteps.push(step);
@@ -134,23 +67,12 @@
         }
     }">
 
-    <!-- Header -->
-    <header
-        class="py-6 px-8 md:px-12 bg-[#F5F5F7] sticky top-0 z-50 border-b border-black/10 backdrop-blur-md bg-opacity-90">
-        <div class="flex items-center justify-between">
-            <div class="text-2xl font-thin tracking-[0.2em] uppercase text-black">
-                PolyEYE
-            </div>
-            <!-- Horizontal Divider (visual only, handled by border-b above but emphasized here if needed) -->
-        </div>
-    </header>
-
-    <main class="max-w-[1600px] mx-auto px-4 md:px-8 mt-8">
+    <div class="max-w-[1600px] mx-auto">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
             <!-- Left Sidebar (Navigator) -->
             <aside class="lg:col-span-3">
-                <div class="bg-white rounded-[40px] p-4 border border-black sticky top-24">
+                <div class="bg-white rounded-[40px] p-4 border border-black sticky top-0">
                     <div class="flex flex-col gap-2">
                         <!-- Step 1 -->
                         <button @click="setStep(1)" :disabled="!canNav(1)"
@@ -362,46 +284,39 @@
                 </div>
             </section>
         </div>
-    </main>
+    </div>
+</div>
+{% endblock %}
 
-    <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
+{% block extra_scripts %}
+document.body.addEventListener('htmx:afterSwap', function (evt) {
+// Logic to handle auto-advancing based on which target was updated
+if (evt.detail.target.id === 'search-results') {
+// Bind click events to search results
+const radios = document.querySelectorAll('input[name="selected_market"]');
+radios.forEach(radio => {
+radio.addEventListener('change', function () {
+// Update condition ID
+let cidInput = document.getElementById('condition-id-input');
+if (cidInput) cidInput.value = this.value;
 
-        document.body.addEventListener('htmx:afterSwap', function (evt) {
-            // Re-run icons for new content
-            lucide.createIcons();
+// Get title safely
+let title = this.dataset.title || "Market";
 
-            // Logic to handle auto-advancing based on which target was updated
-            if (evt.detail.target.id === 'search-results') {
-                // Bind click events to search results
-                const radios = document.querySelectorAll('input[name="selected_market"]');
-                radios.forEach(radio => {
-                    radio.addEventListener('change', function () {
-                        // Update condition ID
-                        let cidInput = document.getElementById('condition-id-input');
-                        if (cidInput) cidInput.value = this.value;
+// Dispatch custom event that Alpine will catch
+window.dispatchEvent(new CustomEvent('market-selected', { detail: { title } }));
+});
+});
+}
 
-                        // Get title safely
-                        let title = this.dataset.title || "Market";
-
-                        // Dispatch custom event that Alpine will catch
-                        window.dispatchEvent(new CustomEvent('market-selected', { detail: { title } }));
-                    });
-                });
-            }
-
-            if (evt.detail.target.id === 'trades-result') {
-                if (evt.detail.target.innerHTML.includes('Success') || evt.detail.target.innerHTML.includes('✓')) {
-                    window.dispatchEvent(new CustomEvent('trades-loaded'));
-                    // Auto trigger generation for Step 3 (Analysis)
-                    setTimeout(() => {
-                        htmx.trigger('#generate-btn', 'click');
-                    }, 100);
-                }
-            }
-        });
-    </script>
-</body>
-
-</html>
+if (evt.detail.target.id === 'trades-result') {
+if (evt.detail.target.innerHTML.includes('Success') || evt.detail.target.innerHTML.includes('✓')) {
+window.dispatchEvent(new CustomEvent('trades-loaded'));
+// Auto trigger generation for Step 3 (Analysis)
+setTimeout(() => {
+htmx.trigger('#generate-btn', 'click');
+}, 100);
+}
+}
+});
+{% endblock %}
