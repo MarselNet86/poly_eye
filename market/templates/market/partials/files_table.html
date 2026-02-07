@@ -7,10 +7,10 @@
                 <th class="text-left py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Created</th>
                 <th class="text-left py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Status</th>
                 <th class="text-left py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Comment</th>
-                <th class="text-right py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Ticks</th>
-                <th class="text-right py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Graphics
+                <th class="text-left py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Ticks</th>
+                <th class="text-center py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Graphics
                 </th>
-                <th class="text-right py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Actions</th>
+                <th class="text-left py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -39,20 +39,20 @@
                 <td class="py-4 px-4 text-sm text-gray-500 max-w-[200px] truncate" title="{{ market.comment }}">
                     {{ market.comment|default:"-" }}
                 </td>
-                <td class="py-4 px-4 text-right">
+                <td class="py-4 px-4 text-left">
                     <span class="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-sm font-light">
                         {{ market.tick_count|default:0 }}
                     </span>
                 </td>
-                <td class="py-4 px-4 text-right">
+                <td class="py-4 px-4 text-center">
                     <a href="{% url 'market:file_detail' market.slug %}" target="_blank"
                         class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-black text-white hover:opacity-80 transition-opacity"
                         title="Open Graphics">
                         <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
                     </a>
                 </td>
-                <td class="py-4 px-4 text-right">
-                    <div class="flex items-center justify-end gap-2">
+                <td class="py-4 px-4 text-left">
+                    <div class="flex items-center justify-start gap-2">
                         <a href="{% url 'market:file_detail' market.slug %}" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400
                                   hover:bg-gray-100 hover:text-black transition-colors" title="View Details">
                             <i data-lucide="eye" class="w-4 h-4"></i>
