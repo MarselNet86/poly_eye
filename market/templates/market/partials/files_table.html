@@ -5,7 +5,11 @@
             <tr class="border-b border-gray-200">
                 <th class="text-left py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Slug</th>
                 <th class="text-left py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Created</th>
+                <th class="text-left py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Status</th>
+                <th class="text-left py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Comment</th>
                 <th class="text-right py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Ticks</th>
+                <th class="text-right py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Graphics
+                </th>
                 <th class="text-right py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Actions</th>
             </tr>
         </thead>
@@ -20,10 +24,32 @@
                 <td class="py-4 px-4 text-sm text-gray-500">
                     {{ market.created_at|date:"M d, Y H:i" }}
                 </td>
+                <td class="py-4 px-4">
+                    {% if market.status == 'analyzed' %}
+                    <span class="bg-black text-white rounded-full px-3 py-1 text-xs font-light uppercase tracking-wide">
+                        Analyzed
+                    </span>
+                    {% else %}
+                    <span
+                        class="border border-black text-black rounded-full px-3 py-1 text-xs font-light uppercase tracking-wide">
+                        Not Analyzed
+                    </span>
+                    {% endif %}
+                </td>
+                <td class="py-4 px-4 text-sm text-gray-500 max-w-[200px] truncate" title="{{ market.comment }}">
+                    {{ market.comment|default:"-" }}
+                </td>
                 <td class="py-4 px-4 text-right">
                     <span class="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-sm font-light">
                         {{ market.tick_count|default:0 }}
                     </span>
+                </td>
+                <td class="py-4 px-4 text-right">
+                    <a href="{% url 'market:file_detail' market.slug %}" target="_blank"
+                        class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-black text-white hover:opacity-80 transition-opacity"
+                        title="Open Graphics">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+                    </a>
                 </td>
                 <td class="py-4 px-4 text-right">
                     <div class="flex items-center justify-end gap-2">
@@ -53,7 +79,8 @@
     </p>
     <div class="flex gap-2">
         {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&sort={{ sort }}&order={{ order }}" class="w-10 h-10 rounded-full border border-black flex items-center justify-center
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&sort={{ sort }}&order={{ order }}&status={{ status }}&has_comment={{ has_comment }}"
+            class="w-10 h-10 rounded-full border border-black flex items-center justify-center
                   hover:bg-black hover:text-white transition-colors">
             <i data-lucide="chevron-left" class="w-4 h-4"></i>
         </a>
@@ -64,7 +91,8 @@
         </span>
 
         {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&sort={{ sort }}&order={{ order }}" class="w-10 h-10 rounded-full border border-black flex items-center justify-center
+        <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&sort={{ sort }}&order={{ order }}&status={{ status }}&has_comment={{ has_comment }}"
+            class="w-10 h-10 rounded-full border border-black flex items-center justify-center
                   hover:bg-black hover:text-white transition-colors">
             <i data-lucide="chevron-right" class="w-4 h-4"></i>
         </a>

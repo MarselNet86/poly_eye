@@ -49,6 +49,25 @@
                         :class="order === 'asc' ? 'rotate-180' : ''"></i>
                 </button>
             </div>
+
+            <!-- Status Filter -->
+            <div class="flex gap-2">
+                <select x-model="status" @change="filterFiles()" class="bg-white border border-black rounded-full px-6 py-4 text-sm font-light
+                               uppercase tracking-wider focus:outline-none cursor-pointer appearance-none">
+                    <option value="all">All Statuses</option>
+                    <option value="analyzed">Analyzed</option>
+                    <option value="not_analyzed">Not Analyzed</option>
+                </select>
+            </div>
+
+            <!-- Comment Filter -->
+            <div class="flex items-center gap-2 bg-white border border-black rounded-full px-6 py-4">
+                <input type="checkbox" id="hasComment" x-model="hasComment" @change="filterFiles()"
+                    class="w-4 h-4 rounded border-gray-300 text-black focus:ring-black">
+                <label for="hasComment" class="text-sm font-light uppercase tracking-wider cursor-pointer select-none">
+                    With comments?
+                </label>
+            </div>
         </div>
 
         <!-- Files Table -->
@@ -101,6 +120,8 @@ Alpine.data('filesPage', () => ({
 search: '{{ search|escapejs }}',
 sort: '{{ sort|escapejs }}',
 order: '{{ order|escapejs }}',
+status: '{{ status|escapejs }}',
+hasComment: {{ has_comment|yesno:"true,false" }},
 showDeleteModal: false,
 deleteSlug: '',
 deleteTickCount: 0,
@@ -111,6 +132,10 @@ const params = new URLSearchParams();
 params.set('q', this.search);
 params.set('sort', this.sort);
 params.set('order', this.order);
+params.set('status', this.status);
+if (this.hasComment) {
+params.set('has_comment', 'true');
+}
 
 fetch('/market/files/?' + params.toString(), {
 headers: { 'HX-Request': 'true' }

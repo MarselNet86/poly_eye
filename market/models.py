@@ -5,6 +5,13 @@ class Market(models.Model):
     """15-минутный рынок бинарных опционов BTC на Polymarket"""
     slug = models.CharField(max_length=100, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    STATUS_CHOICES = [
+        ('analyzed', 'Analyzed'),
+        ('not_analyzed', 'Not Analyzed'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_analyzed')
+    comment = models.TextField(blank=True)
 
     class Meta:
         ordering = ['-created_at']

@@ -22,12 +22,20 @@ def files_list(request):
     search = request.GET.get('q', '').strip()
     sort = request.GET.get('sort', 'ticks')
     order = request.GET.get('order', 'desc')
+    status = request.GET.get('status', 'all')
+    has_comment = request.GET.get('has_comment', 'false')
     page_number = request.GET.get('page', 1)
 
     markets = Market.objects.annotate(tick_count=Count('ticks'))
 
     if search:
         markets = markets.filter(slug__icontains=search)
+
+    if status != 'all':
+        markets = markets.filter(status=status)
+
+    if has_comment == 'true':
+        markets = markets.exclude(comment='')
 
     if sort == 'ticks':
         order_field = 'tick_count'
@@ -47,6 +55,8 @@ def files_list(request):
         'search': search,
         'sort': sort,
         'order': order,
+        'status': status,
+        'has_comment': has_comment,
     }
 
     if request.headers.get('HX-Request'):
