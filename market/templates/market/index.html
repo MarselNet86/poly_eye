@@ -5,7 +5,7 @@
 {% block content %}
 <div x-data="fileUploader" data-upload-url="{% url 'market:upload_csv' %}" data-csrf-token="{{ csrf_token }}">
 
-    <div class="max-w-4xl mx-auto">
+    <div class="w-full">
         <div class="bg-white rounded-[48px] p-8 md:p-12 min-h-[600px] border border-black">
 
             <!-- Header -->
@@ -80,7 +80,8 @@
                     <template x-if="isUploading">
                         <div class="mt-6">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-light uppercase tracking-widest text-gray-500">Uploading...</span>
+                                <span
+                                    class="text-xs font-light uppercase tracking-widest text-gray-500">Uploading...</span>
                                 <span class="text-xs text-gray-400" x-text="uploadProgress + '%'"></span>
                             </div>
                             <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -122,89 +123,80 @@
 
 {% block extra_scripts %}
 document.addEventListener('alpine:init', () => {
-    Alpine.data('fileUploader', () => ({
-        files: [],
-        isDragging: false,
-        uploadProgress: 0,
-        isUploading: false,
-        uploadUrl: '',
-        csrfToken: '',
+Alpine.data('fileUploader', () => ({
+files: [],
+isDragging: false,
+uploadProgress: 0,
+isUploading: false,
+uploadUrl: '',
+csrfToken: '',
 
-        init() {
-            this.uploadUrl = this.$el.dataset.uploadUrl;
-            this.csrfToken = this.$el.dataset.csrfToken;
-        },
+init() {
+this.uploadUrl = this.$el.dataset.uploadUrl;
+this.csrfToken = this.$el.dataset.csrfToken;
+},
 
-        handleDrop(e) {
-            this.isDragging = false;
-            const droppedFiles = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.csv'));
-            this.addFiles(droppedFiles);
-        },
+handleDrop(e) {
+this.isDragging = false;
+const droppedFiles = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.csv'));
+this.addFiles(droppedFiles);
+},
 
-        handleFileSelect(e) {
-            const selectedFiles = Array.from(e.target.files);
-            this.addFiles(selectedFiles);
-            e.target.value = '';
-        },
+handleFileSelect(e) {
+const selectedFiles = Array.from(e.target.files);
+this.addFiles(selectedFiles);
+e.target.value = '';
+},
 
-        addFiles(newFiles) {
-            newFiles.forEach(file => {
-                if (!this.files.find(f => f.name === file.name)) {
-                    this.files.push(file);
-                }
-            });
-        },
-
-        removeFile(index) {
-            this.files.splice(index, 1);
-        },
-
-        formatSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-        },
-
-        uploadFiles() {
-            if (this.files.length === 0) return;
-
-            this.isUploading = true;
-            this.uploadProgress = 0;
-
-            const formData = new FormData();
-            this.files.forEach(file => {
-                formData.append('files', file);
-            });
-
-            const xhr = new XMLHttpRequest();
-
-            xhr.upload.addEventListener('progress', (e) => {
-                if (e.lengthComputable) {
-                    this.uploadProgress = Math.round((e.loaded / e.total) * 100);
-                }
-            });
-
-            xhr.onload = () => {
-                this.isUploading = false;
-                if (xhr.status === 200) {
-                    document.getElementById('upload-result').innerHTML = xhr.responseText;
-                    this.files = [];
-                    this.uploadProgress = 0;
-                } else {
-                    document.getElementById('upload-result').innerHTML = '<div class="text-red-500 p-4">Upload failed: ' + xhr.status + '</div>';
-                }
-                lucide.createIcons();
-            };
-
-            xhr.onerror = () => {
-                this.isUploading = false;
-                document.getElementById('upload-result').innerHTML = '<div class="text-red-500 p-4">Upload failed</div>';
-            };
-
-            xhr.open('POST', this.uploadUrl);
-            xhr.setRequestHeader('X-CSRFToken', this.csrfToken);
-            xhr.send(formData);
-        }
-    }));
+addFiles(newFiles) {
+newFiles.forEach(file => {
+if (!this.files.find(f => f.name === file.name)) {
+this.files.push(file);
+}
 });
-{% endblock %}
+},
+
+removeFile(index) {
+this.files.splice(index, 1);
+},
+
+formatSize(bytes) {
+if (bytes < 1024) return bytes + ' B' ; if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB' ; return
+    (bytes / (1024 * 1024)).toFixed(1) + ' MB' ; }, uploadFiles() { if (this.files.length===0) return;
+    this.isUploading=true; this.uploadProgress=0; const formData=new FormData(); this.files.forEach(file=> {
+    formData.append('files', file);
+    });
+
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener('progress', (e) => {
+    if (e.lengthComputable) {
+    this.uploadProgress = Math.round((e.loaded / e.total) * 100);
+    }
+    });
+
+    xhr.onload = () => {
+    this.isUploading = false;
+    if (xhr.status === 200) {
+    document.getElementById('upload-result').innerHTML = xhr.responseText;
+    this.files = [];
+    this.uploadProgress = 0;
+    } else {
+    document.getElementById('upload-result').innerHTML = '<div class="text-red-500 p-4">Upload failed: ' + xhr.status +
+        '</div>';
+    }
+    lucide.createIcons();
+    };
+
+    xhr.onerror = () => {
+    this.isUploading = false;
+    document.getElementById('upload-result').innerHTML = '<div class="text-red-500 p-4">Upload failed</div>';
+    };
+
+    xhr.open('POST', this.uploadUrl);
+    xhr.setRequestHeader('X-CSRFToken', this.csrfToken);
+    xhr.send(formData);
+    }
+    }));
+    });
+    {% endblock %}

@@ -1,0 +1,102 @@
+{% if page_obj.object_list %}
+<div class="overflow-x-auto">
+    <table class="w-full">
+        <thead>
+            <tr class="border-b border-gray-200">
+                <th class="text-left py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Slug</th>
+                <th class="text-left py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Created</th>
+                <th class="text-right py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Ticks</th>
+                <th class="text-right py-4 px-4 text-xs font-light uppercase tracking-widest text-gray-400">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for market in page_obj %}
+            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
+                <td class="py-4 px-4">
+                    <a href="{% url 'market:file_detail' market.slug %}"
+                       class="text-black font-light hover:underline">
+                        {{ market.slug }}
+                    </a>
+                </td>
+                <td class="py-4 px-4 text-sm text-gray-500">
+                    {{ market.created_at|date:"M d, Y H:i" }}
+                </td>
+                <td class="py-4 px-4 text-right">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-sm font-light">
+                        {{ market.tick_count|default:0 }}
+                    </span>
+                </td>
+                <td class="py-4 px-4 text-right">
+                    <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <a href="{% url 'market:file_detail' market.slug %}"
+                           class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400
+                                  hover:bg-gray-100 hover:text-black transition-colors"
+                           title="View Details">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </a>
+                        <button @click="confirmDelete('{{ market.slug }}', {{ market.tick_count|default:0 }}, '{% url 'market:file_delete' market.slug %}')"
+                                class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400
+                                       hover:bg-red-50 hover:text-red-500 transition-colors"
+                                title="Delete">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
+    <p class="text-sm text-gray-500">
+        Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+    </p>
+    <div class="flex gap-2">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}&sort={{ sort }}&order={{ order }}"
+           class="w-10 h-10 rounded-full border border-black flex items-center justify-center
+                  hover:bg-black hover:text-white transition-colors">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </a>
+        {% endif %}
+
+        <span class="px-4 py-2 text-sm text-gray-500">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ search }}&sort={{ sort }}&order={{ order }}"
+           class="w-10 h-10 rounded-full border border-black flex items-center justify-center
+                  hover:bg-black hover:text-white transition-colors">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<!-- Empty State -->
+<div class="py-20 text-center">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+        <i data-lucide="folder-open" class="w-8 h-8 text-gray-400"></i>
+    </div>
+    <h3 class="text-lg font-light uppercase tracking-wider text-gray-400 mb-2">No Files Found</h3>
+    <p class="text-sm text-gray-400 mb-6">
+        {% if search %}
+            No results for "{{ search }}"
+        {% else %}
+            Upload market data to get started
+        {% endif %}
+    </p>
+    <a href="{% url 'market:index' %}"
+       class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black text-white
+              font-light uppercase tracking-wider text-sm hover:opacity-90 transition-colors">
+        <i data-lucide="upload" class="w-4 h-4"></i>
+        Upload Data
+    </a>
+</div>
+{% endif %}

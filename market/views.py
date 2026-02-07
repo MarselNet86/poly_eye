@@ -2,16 +2,108 @@ import csv
 import io
 from datetime import datetime
 
+from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Count
 from django.http import HttpResponse
-from django.shortcuts import render
-from django.views.decorators.http import require_POST
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.decorators.http import require_POST, require_GET
 
 from .models import Market, MarketTick
 
 
 def index(request):
     return render(request, 'market/index.html')
+
+
+@require_GET
+def files_list(request):
+    """List all Market files with search, sort, and pagination."""
+    search = request.GET.get('q', '').strip()
+    sort = request.GET.get('sort', 'ticks')
+    order = request.GET.get('order', 'desc')
+    page_number = request.GET.get('page', 1)
+
+    markets = Market.objects.annotate(tick_count=Count('ticks'))
+
+    if search:
+        markets = markets.filter(slug__icontains=search)
+
+    if sort == 'ticks':
+        order_field = 'tick_count'
+    else:
+        order_field = 'created_at'
+
+    if order == 'desc':
+        order_field = f'-{order_field}'
+
+    markets = markets.order_by(order_field)
+
+    paginator = Paginator(markets, 20)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'search': search,
+        'sort': sort,
+        'order': order,
+    }
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'market/partials/files_table.html', context)
+
+    return render(request, 'market/files.html', context)
+
+
+@require_GET
+def file_detail(request, slug):
+    """Show all MarketTick data for a specific Market."""
+    market = get_object_or_404(Market, slug=slug)
+
+    page_number = request.GET.get('page', 1)
+    timestamp_filter = request.GET.get('timestamp', '').strip()
+
+    ticks = market.ticks.all().order_by('timestamp_ms')
+
+    if timestamp_filter:
+        try:
+            ts = int(timestamp_filter)
+            ticks = ticks.filter(timestamp_ms=ts)
+        except ValueError:
+            pass
+
+    paginator = Paginator(ticks, 100)
+    page_obj = paginator.get_page(page_number)
+
+    excluded_fields = ['id', 'market', 'market_id']
+    tick_fields = [
+        f.name for f in MarketTick._meta.get_fields()
+        if hasattr(f, 'name') and f.name not in excluded_fields
+    ]
+
+    context = {
+        'market': market,
+        'page_obj': page_obj,
+        'tick_fields': tick_fields,
+        'timestamp_filter': timestamp_filter,
+        'total_count': market.ticks.count(),
+    }
+
+    return render(request, 'market/file_detail.html', context)
+
+
+@require_POST
+def file_delete(request, slug):
+    """Delete a Market and all its ticks."""
+    market = get_object_or_404(Market, slug=slug)
+    market.delete()
+
+    if request.headers.get('HX-Request'):
+        response = HttpResponse('')
+        response['HX-Redirect'] = '/market/files/'
+        return response
+
+    return redirect('market:files_list')
 
 
 @require_POST

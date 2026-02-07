@@ -1,0 +1,137 @@
+{% extends 'main/base.html' %}
+
+{% block title %}PolyEYE - View Files{% endblock %}
+
+{% block content %}
+<div x-data="filesPage()" class="w-full">
+    <div class="bg-white rounded-[48px] p-8 md:p-12 min-h-[600px] border border-black">
+
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
+            <div>
+                <h2 class="text-4xl md:text-6xl font-thin uppercase tracking-tighter leading-[0.9] text-black">
+                    View Files
+                </h2>
+                <p class="mt-4 text-lg text-gray-500 font-light">
+                    Browse and manage uploaded market data
+                </p>
+            </div>
+            <a href="{% url 'market:index' %}" class="px-6 py-3 rounded-full font-light uppercase tracking-wider text-sm
+                      bg-black text-white border border-black hover:opacity-90 transition-all
+                      flex items-center gap-2">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                Upload New
+            </a>
+        </div>
+
+        <!-- Search & Sort Controls -->
+        <div class="flex flex-col md:flex-row gap-4 mb-8">
+            <!-- Search -->
+            <div class="flex-1 relative">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                <input type="text" x-model="search" @input.debounce.300ms="filterFiles()"
+                    placeholder="Search by slug..."
+                    class="w-full bg-transparent border border-black rounded-full pl-12 pr-6 py-4
+                              text-black font-light placeholder-gray-400 focus:outline-none focus:bg-white transition-all">
+            </div>
+
+            <!-- Sort Dropdown -->
+            <div class="flex gap-2">
+                <select x-model="sort" @change="filterFiles()" class="bg-white border border-black rounded-full px-6 py-4 text-sm font-light
+                               uppercase tracking-wider focus:outline-none cursor-pointer appearance-none">
+                    <option value="ticks">Sort by Ticks</option>
+                    <option value="date">Sort by Date</option>
+                </select>
+                <button @click="toggleOrder()" class="w-14 h-14 rounded-full border border-black flex items-center justify-center
+                               hover:bg-gray-50 transition-colors">
+                    <i data-lucide="arrow-down" class="w-5 h-5 transition-transform"
+                        :class="order === 'asc' ? 'rotate-180' : ''"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Files Table -->
+        <div id="files-container">
+            {% include 'market/partials/files_table.html' %}
+        </div>
+
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div x-show="showDeleteModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    @keydown.escape.window="showDeleteModal = false">
+    <div class="bg-white rounded-[32px] p-8 max-w-md mx-4 border border-black" @click.outside="showDeleteModal = false">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+                <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-light uppercase tracking-wider">Confirm Delete</h3>
+                <p class="text-sm text-gray-500">This action cannot be undone</p>
+            </div>
+        </div>
+        <p class="text-gray-600 mb-6">
+            Are you sure you want to delete "<span x-text="deleteSlug" class="font-medium"></span>"
+            and all its <span x-text="deleteTickCount" class="font-medium"></span> ticks?
+        </p>
+        <div class="flex gap-4">
+            <button @click="showDeleteModal = false" class="flex-1 px-6 py-3 rounded-full border border-black font-light uppercase
+                           tracking-wider text-sm hover:bg-gray-50 transition-colors">
+                Cancel
+            </button>
+            <form :action="deleteUrl" method="POST" class="flex-1">
+                {% csrf_token %}
+                <button type="submit" class="w-full px-6 py-3 rounded-full bg-red-500 text-white font-light
+                               uppercase tracking-wider text-sm hover:bg-red-600 transition-colors">
+                    Delete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+document.addEventListener('alpine:init', () => {
+Alpine.data('filesPage', () => ({
+search: '{{ search|escapejs }}',
+sort: '{{ sort|escapejs }}',
+order: '{{ order|escapejs }}',
+showDeleteModal: false,
+deleteSlug: '',
+deleteTickCount: 0,
+deleteUrl: '',
+
+filterFiles() {
+const params = new URLSearchParams();
+params.set('q', this.search);
+params.set('sort', this.sort);
+params.set('order', this.order);
+
+fetch('/market/files/?' + params.toString(), {
+headers: { 'HX-Request': 'true' }
+})
+.then(response => response.text())
+.then(html => {
+document.getElementById('files-container').innerHTML = html;
+lucide.createIcons();
+});
+
+history.pushState({}, '', '/market/files/?' + params.toString());
+},
+
+toggleOrder() {
+this.order = this.order === 'desc' ? 'asc' : 'desc';
+this.filterFiles();
+},
+
+confirmDelete(slug, tickCount, url) {
+this.deleteSlug = slug;
+this.deleteTickCount = tickCount;
+this.deleteUrl = url;
+this.showDeleteModal = true;
+}
+}));
+});
+{% endblock %}
